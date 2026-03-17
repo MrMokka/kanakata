@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { kanaDictionary } from '../../data/kanaDictionary';
 import './ChooseCharacters.scss';
 import CharacterGroup from './CharacterGroup';
+import CustomWordEditor from './CustomWordEditor';
 
 class ChooseCharacters extends Component {
   state = {
@@ -291,6 +292,11 @@ class ChooseCharacters extends Component {
                   &nbsp;&middot;&nbsp; <a href="javascript:" onClick={()=>this.selectAll('custom', false, false, 'katakana')}>All katakana</a>
                 </div>
               </div>
+            </div>
+          </div>
+          <div className="row">
+            <div className="col-sm-12">
+              <CustomWordEditor />
             </div>
           </div>
           <div className="down-arrow"

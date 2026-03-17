@@ -1,6 +1,8 @@
 // Word dictionary for word translation stage
 // Each word has: japanese (in kana), romaji, english meaning, and optionally kanji
-export const wordDictionary = [
+
+// Base words that come with the app
+export const baseWordDictionary = [
   // Greetings
   { japanese: 'こんにちは', romaji: 'konnichiwa', english: 'hello', kanji: '今日は' },
   { japanese: 'おはよう', romaji: 'ohayou', english: 'good morning', kanji: 'お早う' },
@@ -124,4 +126,48 @@ export const wordDictionary = [
   { japanese: 'しごと', romaji: 'shigoto', english: 'work', kanji: '仕事' },
   { japanese: 'なまえ', romaji: 'namae', english: 'name', kanji: '名前' }
 ];
+
+// Get custom words from localStorage
+export function getCustomWords() {
+  try {
+    const stored = localStorage.getItem('customWords');
+    return stored ? JSON.parse(stored) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+// Save custom words to localStorage
+export function saveCustomWords(words) {
+  try {
+    localStorage.setItem('customWords', JSON.stringify(words));
+  } catch (e) {
+    console.error('Failed to save custom words:', e);
+  }
+}
+
+// Add a new custom word
+export function addCustomWord(word) {
+  const customWords = getCustomWords();
+  customWords.push(word);
+  saveCustomWords(customWords);
+  return customWords;
+}
+
+// Remove a custom word by index
+export function removeCustomWord(index) {
+  const customWords = getCustomWords();
+  customWords.splice(index, 1);
+  saveCustomWords(customWords);
+  return customWords;
+}
+
+// Get combined word dictionary (base + custom)
+export function getWordDictionary() {
+  return [...baseWordDictionary, ...getCustomWords()];
+}
+
+// For backward compatibility, also export as wordDictionary
+// This will be the base dictionary; components should use getWordDictionary() for the full list
+export const wordDictionary = baseWordDictionary;
 

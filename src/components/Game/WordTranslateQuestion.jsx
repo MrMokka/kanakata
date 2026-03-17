@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { wordDictionary } from '../../data/wordDictionary';
+import { getWordDictionary } from '../../data/wordDictionary';
 import { quizSettings } from '../../data/quizSettings';
 import { shuffle } from '../../data/helperFuncs';
 import './Question.scss';
@@ -26,7 +26,7 @@ class WordTranslateQuestion extends Component {
   }
 
   componentWillMount() {
-    this.availableWords = [...wordDictionary];
+    this.availableWords = getWordDictionary(); // Includes base + custom words
     this.completedWords = []; // Track correctly answered words
     this.previousQuestion = null;
     this.stageProgress = 0;
