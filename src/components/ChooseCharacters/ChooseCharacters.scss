@@ -92,6 +92,24 @@
   color: #d9534f;
   padding-bottom: 10px;
 }
+.stage-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+.stage-start-button {
+  font-size: 0.85em;
+  padding: 6px 12px;
+  white-space: nowrap;
+  @media (max-width: 768px) {
+    width: calc(50% - 4px);
+    font-size: 0.75em;
+    padding: 8px 6px;
+  }
+}
 .lock {
   color: #888;
   margin-bottom: 10px;

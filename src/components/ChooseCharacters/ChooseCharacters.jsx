@@ -13,6 +13,15 @@ class ChooseCharacters extends Component {
     startIsVisible: true
   }
 
+  stageDescriptions = [
+    { stage: 1, title: 'Stage 1: Choose One', description: 'Pick the correct romaji' },
+    { stage: 2, title: 'Stage 2: Reverse', description: 'Pick the correct kana' },
+    { stage: 3, title: 'Stage 3: Write', description: 'Type the romaji answer' },
+    { stage: 4, title: 'Stage 4: Three at Once', description: 'Type three characters' },
+    { stage: 5, title: 'Stage 5: Draw', description: 'Draw the character' },
+    { stage: 6, title: 'Stage 6: Words', description: 'Translate words' }
+  ]
+
   componentDidMount() {
     this.testIsStartVisible();
     window.addEventListener('resize', this.testIsStartVisible);
@@ -195,10 +204,13 @@ class ChooseCharacters extends Component {
     return rows;
   }
 
-  startGame() {
+  startGame(stage = null) {
     if(this.state.selectedGroups.length < 1) {
       this.setState({ errMsg: 'Choose at least one group!'});
       return;
+    }
+    if (stage) {
+      this.props.lockStage(stage, true);
     }
     this.props.handleStartGame(this.state.selectedGroups);
   }
@@ -212,6 +224,30 @@ class ChooseCharacters extends Component {
               <div className="panel-body welcome">
                 <h4>Welcome to Kana Pro!</h4>
                 <p>Please choose the groups of characters that you'd like to be studying.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="row">
+          <div className="col-xs-12 text-center" style={{ marginBottom: '20px' }}>
+            {
+              this.state.errMsg !== '' &&
+                <div className="error-message">{this.state.errMsg}</div>
+            }
+            <button ref={c => this.startRef = c} className="btn btn-danger startgame-button" onClick={() => this.startGame()}>Start the Quiz!</button>
+            <div style={{ marginTop: '15px' }}>
+              <p style={{ marginBottom: '10px', color: '#666' }}>Or start at a specific stage:</p>
+              <div className="stage-buttons">
+                {this.stageDescriptions.map(({ stage, title, description }) => (
+                  <button
+                    key={stage}
+                    className="btn btn-default stage-start-button"
+                    onClick={() => this.startGame(stage)}
+                    title={description}
+                  >
+                    {title}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -272,13 +308,6 @@ class ChooseCharacters extends Component {
                   />
               }
               <Switch onClick={()=>this.props.lockStage(this.props.stage)} on={this.props.isLocked} /></span>
-          </div>
-          <div className="col-sm-offset-3 col-sm-6 col-xs-12 text-center">
-            {
-              this.state.errMsg !== '' &&
-                <div className="error-message">{this.state.errMsg}</div>
-            }
-            <button ref={c => this.startRef = c} className="btn btn-danger startgame-button" onClick={() => this.startGame()}>Start the Quiz!</button>
           </div>
           <div className="down-arrow"
             style={{display: this.state.startIsVisible ? 'none' : 'block'}}
