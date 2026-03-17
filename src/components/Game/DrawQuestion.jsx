@@ -454,8 +454,7 @@ class DrawQuestion extends Component {
 
     if(correct)
       this.stageProgress = this.stageProgress+1;
-    else
-      this.stageProgress = this.stageProgress > 0 ? this.stageProgress - 1 : 0;
+    // Wrong answers don't reduce progress - user just needs X correct total
     this.setState({stageProgress: this.stageProgress});
 
     if(this.stageProgress >= quizSettings.stageLength[5]) {
