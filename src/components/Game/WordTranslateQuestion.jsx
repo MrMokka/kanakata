@@ -20,11 +20,13 @@ class WordTranslateQuestion extends Component {
     currentQuestion: null,
     currentAnswer: '',
     stageProgress: 0,
-    mode: 'jp-to-en' // 'jp-to-en' or 'en-to-jp'
+    mode: 'jp-to-en', // 'jp-to-en' or 'en-to-jp'
+    showKanji: false // Toggle to show kanji instead of kana
   }
 
   componentWillMount() {
     this.availableWords = [...wordDictionary];
+    this.completedWords = []; // Track correctly answered words
     this.previousQuestion = null;
     this.stageProgress = 0;
   }
@@ -34,7 +36,15 @@ class WordTranslateQuestion extends Component {
   }
 
   getRandomWords(amount, exclude) {
-    let words = this.availableWords.slice();
+    // Filter out completed words
+    let words = this.availableWords.filter(w => !this.completedWords.includes(w));
+
+    // If all words have been completed, reset the pool
+    if (words.length === 0) {
+      this.completedWords = [];
+      words = this.availableWords.slice();
+    }
+
     if (exclude) {
       words = words.filter(w => w !== exclude);
     }
@@ -65,24 +75,42 @@ class WordTranslateQuestion extends Component {
       allowedAnswers = [word.english.toLowerCase(), word.romaji.toLowerCase()];
       isCorrect = allowedAnswers.includes(answerTrimmed);
     } else {
-      // Displaying English -> accept Japanese or romaji
+      // Displaying English -> accept Japanese, romaji, or kanji (if available)
       allowedAnswers = [word.japanese, word.romaji.toLowerCase()];
-      isCorrect = answerTrimmed === word.japanese || answerTrimmed === word.romaji.toLowerCase();
+      if (word.kanji) {
+        allowedAnswers.push(word.kanji);
+      }
+      isCorrect = answerTrimmed === word.japanese ||
+                  answerTrimmed === word.romaji.toLowerCase() ||
+                  (word.kanji && answer.trim() === word.kanji);
     }
 
     this.previousQuestion = this.currentQuestion;
     this.previousAllowedAnswers = allowedAnswers;
+
+    // Build the correct answer display string
+    let correctAnswerDisplay;
+    if (this.state.mode === 'jp-to-en') {
+      correctAnswerDisplay = `${word.english} / ${word.romaji}`;
+    } else {
+      correctAnswerDisplay = word.kanji
+        ? `${word.japanese} / ${word.kanji} / ${word.romaji}`
+        : `${word.japanese} / ${word.romaji}`;
+    }
+
     this.setState({
       previousQuestion: this.previousQuestion,
       previousAnswer: answer,
-      previousCorrectAnswer: this.state.mode === 'jp-to-en'
-        ? `${word.english} / ${word.romaji}`
-        : `${word.japanese} / ${word.romaji}`,
+      previousCorrectAnswer: correctAnswerDisplay,
       wasCorrect: isCorrect
     });
 
     if (isCorrect) {
       this.stageProgress = this.stageProgress + 1;
+      // Add to completed words so it won't be asked again
+      if (!this.completedWords.includes(this.currentQuestion)) {
+        this.completedWords.push(this.currentQuestion);
+      }
     } else {
       this.stageProgress = this.stageProgress > 0 ? this.stageProgress - 1 : 0;
     }
@@ -114,9 +142,17 @@ class WordTranslateQuestion extends Component {
     );
   }
 
+  toggleKanji = () => {
+    this.setState(prevState => ({ showKanji: !prevState.showKanji }));
+  }
+
   getShowableQuestion() {
     if (!this.state.currentQuestion) return '';
     if (this.state.mode === 'jp-to-en') {
+      // Show kanji if enabled and available, otherwise show kana
+      if (this.state.showKanji && this.state.currentQuestion.kanji) {
+        return this.state.currentQuestion.kanji;
+      }
       return this.state.currentQuestion.japanese;
     } else {
       return this.state.currentQuestion.english;
@@ -179,6 +215,11 @@ class WordTranslateQuestion extends Component {
           <button className="btn btn-xs btn-default" onClick={this.toggleMode}>
             {this.state.mode === 'jp-to-en' ? 'Switch to: English → Japanese' : 'Switch to: Japanese → English'}
           </button>
+          {this.state.mode === 'jp-to-en' && (
+            <button className="btn btn-xs btn-default" style={{ marginLeft: '8px' }} onClick={this.toggleKanji}>
+              {this.state.showKanji ? 'Show: Kana' : 'Show: Kanji'}
+            </button>
+          )}
         </div>
         <div className="progress" style={{ marginTop: '16px' }}>
           <div
