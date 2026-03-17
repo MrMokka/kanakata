@@ -11,7 +11,8 @@ class Question extends Component {
     currentAnswer: '',
     currentQuestion: [],
     answerOptions: [],
-    stageProgress: 0
+    stageProgress: 0,
+    results: [] // Track all answers for summary
   }
     // this.setNewQuestion = this.setNewQuestion.bind(this);
     // this.handleAnswer = this.handleAnswer.bind(this);
@@ -113,13 +114,33 @@ class Question extends Component {
     this.previousAnswer = answer;
     this.setState({previousAnswer: this.previousAnswer});
     this.previousAllowedAnswers = this.allowedAnswers;
-    if(this.isInAllowedAnswers(this.previousAnswer))
+
+    const isCorrect = this.isInAllowedAnswers(answer);
+
+    // Build result entry for summary
+    const questionDisplay = this.props.stage === 2
+      ? findRomajisAtKanaKey(this.currentQuestion, kanaDictionary)[0]
+      : this.currentQuestion.join('');
+    const correctAnswerDisplay = this.allowedAnswers[0];
+
+    const resultEntry = {
+      question: questionDisplay,
+      correctAnswer: correctAnswerDisplay,
+      userAnswer: answer,
+      correct: isCorrect
+    };
+
+    const newResults = [...this.state.results, resultEntry];
+    this.setState({ results: newResults });
+
+    if(isCorrect)
       this.stageProgress = this.stageProgress+1;
     else
       this.stageProgress = this.stageProgress > 0 ? this.stageProgress - 1 : 0;
     this.setState({stageProgress: this.stageProgress});
-    if(this.stageProgress >= quizSettings.stageLength[this.props.stage] && !this.props.isLocked) {
-      setTimeout(() => { this.props.handleStageUp() }, 300);
+
+    if(this.stageProgress >= quizSettings.stageLength[this.props.stage]) {
+      this.props.handleStageComplete(newResults);
     }
     else
       this.setNewQuestion();
@@ -253,7 +274,7 @@ class Question extends Component {
             aria-valuemax={quizSettings.stageLength[this.props.stage]}
             style={stageProgressPercentageStyle}
           >
-            <span>Stage {this.props.stage} {this.props.isLocked?' (Locked)':''}</span>
+            <span>Progress</span>
           </div>
         </div>
       </div>
@@ -264,7 +285,7 @@ class Question extends Component {
 
 class AnswerButton extends Component {
   getShowableAnswer() {
-    if(this.props.answertype=='romaji')
+    if(this.props.answertype === 'romaji')
       return findRomajisAtKanaKey(this.props.answer, kanaDictionary)[0];
     else return this.props.answer;
   }

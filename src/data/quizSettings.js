@@ -1,9 +1,9 @@
 export const quizSettings = {
     stageLength : {
-        1: 20,
+        1: 5,
         2: 20,
         3: 20,
-        4: 20,
+        4: 5,
         // New writing stage
         5: 15,
         // Word translation stage

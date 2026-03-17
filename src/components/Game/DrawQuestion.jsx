@@ -36,7 +36,10 @@ class DrawQuestion extends Component {
     resultRecallMapURL: '',
     showPrecisionMap: false, // deprecated per new combined toggle
     showRecallMap: false,    // deprecated per new combined toggle
-    showDebugMaps: false
+    showDebugMaps: false,
+
+    // Track all answers for summary
+    results: []
   };
 
   componentDidMount() {
@@ -435,13 +438,28 @@ class DrawQuestion extends Component {
   onSubmit(correct) {
     this.previousQuestion = this.currentQuestion;
     this.setState({previousQuestion: this.previousQuestion});
+
+    // Build result entry for summary
+    const kana = this.currentQuestion[0] || '';
+    const romaji = findRomajisAtKanaKey(kana, kanaDictionary)[0] || '';
+    const resultEntry = {
+      question: romaji,
+      correctAnswer: kana,
+      userAnswer: correct ? kana : '(drawing)',
+      correct: correct
+    };
+
+    const newResults = [...this.state.results, resultEntry];
+    this.setState({ results: newResults });
+
     if(correct)
       this.stageProgress = this.stageProgress+1;
     else
       this.stageProgress = this.stageProgress > 0 ? this.stageProgress - 1 : 0;
     this.setState({stageProgress: this.stageProgress});
-    if(this.stageProgress >= quizSettings.stageLength[5] && !this.props.isLocked) {
-      setTimeout(() => { this.props.handleStageUp() }, 300);
+
+    if(this.stageProgress >= quizSettings.stageLength[5]) {
+      this.props.handleStageComplete(newResults);
     }
     else
       this.setNewQuestion();
@@ -551,7 +569,7 @@ class DrawQuestion extends Component {
             aria-valuemax={quizSettings.stageLength[5]}
             style={stageProgressPercentageStyle}
           >
-            <span>Stage 5 (Write) {this.props.isLocked?' (Locked)':''}</span>
+            <span>Progress</span>
           </div>
         </div>
       </div>

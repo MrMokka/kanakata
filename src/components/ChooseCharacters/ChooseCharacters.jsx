@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import Switch from 'react-toggle-switch';
 import { kanaDictionary } from '../../data/kanaDictionary';
 import './ChooseCharacters.scss';
 import CharacterGroup from './CharacterGroup';
@@ -14,12 +13,12 @@ class ChooseCharacters extends Component {
   }
 
   stageDescriptions = [
-    { stage: 1, title: 'Stage 1: Choose One', description: 'Pick the correct romaji' },
-    { stage: 2, title: 'Stage 2: Reverse', description: 'Pick the correct kana' },
-    { stage: 3, title: 'Stage 3: Write', description: 'Type the romaji answer' },
-    { stage: 4, title: 'Stage 4: Three at Once', description: 'Type three characters' },
-    { stage: 5, title: 'Stage 5: Draw', description: 'Draw the character' },
-    { stage: 6, title: 'Stage 6: Words', description: 'Translate words' }
+    { stage: 1, title: 'Choose One', description: 'Pick the correct romaji' },
+    { stage: 2, title: 'Reverse', description: 'Pick the correct kana' },
+    { stage: 3, title: 'Write', description: 'Type the romaji answer' },
+    { stage: 4, title: 'Three at Once', description: 'Type three characters' },
+    { stage: 5, title: 'Draw', description: 'Draw the character' },
+    { stage: 6, title: 'Word Translation', description: 'Translate words' }
   ]
 
   componentDidMount() {
@@ -204,15 +203,12 @@ class ChooseCharacters extends Component {
     return rows;
   }
 
-  startGame(stage = null) {
+  startGame(stage) {
     if(this.state.selectedGroups.length < 1) {
       this.setState({ errMsg: 'Choose at least one group!'});
       return;
     }
-    if (stage) {
-      this.props.lockStage(stage, true);
-    }
-    this.props.handleStartGame(this.state.selectedGroups);
+    this.props.handleStartGame(this.state.selectedGroups, stage);
   }
 
   render() {
@@ -234,14 +230,13 @@ class ChooseCharacters extends Component {
               this.state.errMsg !== '' &&
                 <div className="error-message">{this.state.errMsg}</div>
             }
-            <button ref={c => this.startRef = c} className="btn btn-danger startgame-button" onClick={() => this.startGame()}>Start the Quiz!</button>
-            <div style={{ marginTop: '15px' }}>
-              <p style={{ marginBottom: '10px', color: '#666' }}>Or start at a specific stage:</p>
+            <div ref={c => this.startRef = c}>
+              <p style={{ marginBottom: '10px', color: '#666' }}>Choose a game mode:</p>
               <div className="stage-buttons">
                 {this.stageDescriptions.map(({ stage, title, description }) => (
                   <button
                     key={stage}
-                    className="btn btn-default stage-start-button"
+                    className="btn btn-danger stage-start-button"
                     onClick={() => this.startGame(stage)}
                     title={description}
                   >
@@ -297,17 +292,6 @@ class ChooseCharacters extends Component {
                 </div>
               </div>
             </div>
-          </div>
-          <div className="col-sm-3 col-xs-12 pull-right">
-            <span className="pull-right lock">Lock to stage &nbsp;
-              {
-                this.props.isLocked &&
-                  <input className="stage-choice" type="number" min="1" max="6" maxLength="1" size="1"
-                    onChange={(e)=>this.props.lockStage(parseInt(e.target.value,10), true)}
-                    value={this.props.stage}
-                  />
-              }
-              <Switch onClick={()=>this.props.lockStage(this.props.stage)} on={this.props.isLocked} /></span>
           </div>
           <div className="down-arrow"
             style={{display: this.state.startIsVisible ? 'none' : 'block'}}

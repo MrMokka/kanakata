@@ -1,46 +1,41 @@
 import React, { Component } from 'react';
-import ShowStage from './ShowStage';
 import Question from './Question';
 import DrawQuestion from './DrawQuestion';
 import WordTranslateQuestion from './WordTranslateQuestion';
+import Summary from './Summary';
 
 class Game extends Component {
-  state = { showScreen: '' }
-
-  componentWillMount() {
-    this.setState({showScreen: 'stage'});
+  state = {
+    showSummary: false,
+    results: []
   }
 
-  stageUp = () => {
-    this.props.stageUp();
-    this.setState({showScreen: 'stage'});
-  }
-
-  lockStage = stage => {
-    this.setState({showScreen: 'question'});
-    this.props.lockStage(stage);
-  }
-
-  showQuestion = () => {
-    this.setState({showScreen: 'question'})
+  handleStageComplete = (results) => {
+    this.setState({
+      showSummary: true,
+      results: results || []
+    });
   }
 
   render() {
+    if (this.state.showSummary) {
+      return (
+        <Summary
+          results={this.state.results}
+          onBackToMenu={this.props.handleEndGame}
+        />
+      );
+    }
+
     return (
       <div>
         {
-          this.state.showScreen==='stage' &&
-            <ShowStage lockStage={this.lockStage} handleShowQuestion={this.showQuestion} handleEndGame={this.props.handleEndGame} stage={this.props.stage} />
-        }
-        {
-          this.state.showScreen==='question' && (
-            this.props.stage === 6 ?
-              <WordTranslateQuestion isLocked={this.props.isLocked} handleStageUp={this.stageUp} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
-            : this.props.stage === 5 ?
-              <DrawQuestion isLocked={this.props.isLocked} handleStageUp={this.stageUp} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
-            :
-              <Question isLocked={this.props.isLocked} handleStageUp={this.stageUp} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
-          )
+          this.props.stage === 6 ?
+            <WordTranslateQuestion handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
+          : this.props.stage === 5 ?
+            <DrawQuestion handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
+          :
+            <Question handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
         }
       </div>
     );

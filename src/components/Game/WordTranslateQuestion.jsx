@@ -21,7 +21,8 @@ class WordTranslateQuestion extends Component {
     currentAnswer: '',
     stageProgress: 0,
     mode: 'jp-to-en', // 'jp-to-en' or 'en-to-jp'
-    showKanji: false // Toggle to show kanji instead of kana
+    showKanji: false, // Toggle to show kanji instead of kana
+    results: [] // Track all answers for summary
   }
 
   componentWillMount() {
@@ -98,11 +99,26 @@ class WordTranslateQuestion extends Component {
         : `${word.japanese} / ${word.romaji}`;
     }
 
+    // Build result entry for summary
+    const questionDisplay = this.state.mode === 'jp-to-en'
+      ? `${word.japanese} (${word.romaji})`
+      : word.english;
+
+    const resultEntry = {
+      question: questionDisplay,
+      correctAnswer: correctAnswerDisplay,
+      userAnswer: answer,
+      correct: isCorrect
+    };
+
+    const newResults = [...this.state.results, resultEntry];
+
     this.setState({
       previousQuestion: this.previousQuestion,
       previousAnswer: answer,
       previousCorrectAnswer: correctAnswerDisplay,
-      wasCorrect: isCorrect
+      wasCorrect: isCorrect,
+      results: newResults
     });
 
     if (isCorrect) {
@@ -116,8 +132,8 @@ class WordTranslateQuestion extends Component {
     }
     this.setState({ stageProgress: this.stageProgress });
 
-    if (this.stageProgress >= quizSettings.stageLength[6] && !this.props.isLocked) {
-      setTimeout(() => { this.props.handleStageUp() }, 300);
+    if (this.stageProgress >= quizSettings.stageLength[6]) {
+      this.props.handleStageComplete(newResults);
     } else {
       this.setNewQuestion();
     }
@@ -230,7 +246,7 @@ class WordTranslateQuestion extends Component {
             aria-valuemax={quizSettings.stageLength[6]}
             style={stageProgressPercentageStyle}
           >
-            <span>Stage 6 (Words) {this.props.isLocked ? ' (Locked)' : ''}</span>
+            <span>Progress</span>
           </div>
         </div>
       </div>
