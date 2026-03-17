@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import ShowStage from './ShowStage';
 import Question from './Question';
 import DrawQuestion from './DrawQuestion';
+import WordTranslateQuestion from './WordTranslateQuestion';
 
 class Game extends Component {
   state = { showScreen: '' }
@@ -33,7 +34,9 @@ class Game extends Component {
         }
         {
           this.state.showScreen==='question' && (
-            this.props.stage === 5 ?
+            this.props.stage === 6 ?
+              <WordTranslateQuestion isLocked={this.props.isLocked} handleStageUp={this.stageUp} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
+            : this.props.stage === 5 ?
               <DrawQuestion isLocked={this.props.isLocked} handleStageUp={this.stageUp} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
             :
               <Question isLocked={this.props.isLocked} handleStageUp={this.stageUp} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
