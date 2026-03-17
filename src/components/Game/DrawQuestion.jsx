@@ -20,7 +20,7 @@ class DrawQuestion extends Component {
     similarity: 0,
     showHint: false,
     // prompt type: 'kana' or 'romaji'
-    promptType: 'kana',
+    promptType: 'romaji',
 
     // result preview state
     resultShown: false,
@@ -149,7 +149,7 @@ class DrawQuestion extends Component {
 
   setNewQuestion() {
     this.currentQuestion = this.getRandomKanas(1, false, this.previousQuestion);
-    this.setState({currentQuestion: this.currentQuestion});
+    this.setState({currentQuestion: this.currentQuestion, promptType: 'romaji'});
     // Full clear for a new question
     this.clearCanvas();
     this.renderTargetToHidden();
@@ -262,6 +262,68 @@ class DrawQuestion extends Component {
     return { x: minX, y: minY, w: (maxX-minX+1), h: (maxY-minY+1) };
   }
 
+  // Helper: shift the ink ImageData to align with target center
+  getAlignedInkImageData() {
+    try {
+      const width = this.hidden.width, height = this.hidden.height;
+      const inkImg = this.ictx.getImageData(0,0,width,height);
+      const tgtImg = this.hctx.getImageData(0,0,width,height);
+      const bbInk = this.getBBox(inkImg, width, height);
+      const bbTgt = this.getBBox(tgtImg, width, height);
+      if (!bbInk || !bbTgt) return inkImg; // if either is empty, use raw
+      const cxInk = bbInk.x + bbInk.w/2;
+      const cyInk = bbInk.y + bbInk.h/2;
+      const cxTgt = bbTgt.x + bbTgt.w/2;
+      const cyTgt = bbTgt.y + bbTgt.h/2;
+      const dx = Math.round(cxTgt - cxInk);
+      const dy = Math.round(cyTgt - cyInk);
+      // draw shifted ink into temp canvas
+      const tmp = document.createElement('canvas'); tmp.width = width; tmp.height = height;
+      const tctx = tmp.getContext('2d');
+      // Put inkImg as bitmap into a canvas then draw with translation
+      const src = document.createElement('canvas'); src.width = width; src.height = height;
+      const sctx = src.getContext('2d'); sctx.putImageData(inkImg, 0, 0);
+      tctx.clearRect(0,0,width,height);
+      tctx.drawImage(src, dx, dy);
+      return tctx.getImageData(0,0,width,height);
+    } catch (e) {
+      try { return this.ictx.getImageData(0,0,this.ink.width,this.ink.height); } catch (_) { return null; }
+    }
+  }
+
+  // Helper: simple morphological dilation on alpha channel
+  dilateAlpha(imgData, width, height, iterations=1) {
+    const src = new Uint8ClampedArray(imgData.data); // copy
+    const alphaThresh = 10;
+    const getA = (x,y) => src[((y*width + x)*4)+3] || 0;
+    for (let it=0; it<iterations; it++) {
+      const dst = imgData.data;
+      for (let y=0; y<height; y++) {
+        for (let x=0; x<width; x++) {
+          let maxA = 0;
+          // 3x3 neighborhood
+          for (let ny=y-1; ny<=y+1; ny++) {
+            if (ny<0 || ny>=height) continue;
+            for (let nx=x-1; nx<=x+1; nx++) {
+              if (nx<0 || nx>=width) continue;
+              const a = getA(nx, ny);
+              if (a > maxA) maxA = a;
+            }
+          }
+          const i = (y*width + x)*4;
+          dst[i] = src[i];
+          dst[i+1] = src[i+1];
+          dst[i+2] = src[i+2];
+          // keep max alpha (dilated)
+          dst[i+3] = maxA;
+        }
+      }
+      // next iteration starts from current result
+      for (let i=0; i<src.length; i++) src[i] = imgData.data[i];
+    }
+    return imgData;
+  }
+
   // Build data URLs for result preview
   buildResultPreviews(drawnImgData) {
     try {
@@ -274,21 +336,22 @@ class DrawQuestion extends Component {
       for(let i=1;i<4;i++){ const x=(ovCanvas.width/4)*i, y=(ovCanvas.height/4)*i; ovCtx.beginPath(); ovCtx.moveTo(x,0); ovCtx.lineTo(x,ovCanvas.height); ovCtx.stroke(); ovCtx.beginPath(); ovCtx.moveTo(0,y); ovCtx.lineTo(ovCanvas.width,y); ovCtx.stroke(); }
       // target underlay
       ovCtx.save(); ovCtx.globalAlpha = 0.10; ovCtx.drawImage(this.hidden, 0, 0); ovCtx.restore();
-      // raw ink
+      // raw ink (aligned) for visual overlay (not dilated to avoid encouraging fill)
       const inkImg = drawnImgData; // ImageData
       const inkCanvas = document.createElement('canvas'); inkCanvas.width = this.hidden.width; inkCanvas.height = this.hidden.height;
       inkCanvas.getContext('2d').putImageData(inkImg, 0, 0);
       ovCtx.save(); ovCtx.globalAlpha = 0.48; ovCtx.globalCompositeOperation = 'source-over'; ovCtx.drawImage(inkCanvas, 0, 0); ovCtx.restore();
       const overlayURL = ovCanvas.toDataURL();
 
-      // Build precision and recall maps
+      // Build precision and recall maps using dilated ink for leniency
       const targetImg = this.hctx.getImageData(0,0,this.hidden.width,this.hidden.height);
       const width = this.hidden.width, height = this.hidden.height;
+      const alignedInkForMaps = this.dilateAlpha(this.copyImageData(inkImg), width, height, 1); // 1 iteration
       // Precision map: ink pixels colored by whether they hit target (green) or miss (red)
       const precCanvas = document.createElement('canvas'); precCanvas.width = width; precCanvas.height = height; const pctx = precCanvas.getContext('2d'); const pData = pctx.createImageData(width, height);
       // Recall map: target pixels colored by whether covered by ink (green) or uncovered (orange)
       const recCanvas = document.createElement('canvas'); recCanvas.width = width; recCanvas.height = height; const rctx = recCanvas.getContext('2d'); const rData = rctx.createImageData(width, height);
-      const drawn = inkImg.data; const target = targetImg.data; const alphaThresh = 10;
+      const drawn = alignedInkForMaps.data; const target = targetImg.data; const alphaThresh = 10;
       for (let i=0; i<drawn.length; i+=4) {
         const d = drawn[i+3] > alphaThresh; const t = target[i+3] > alphaThresh;
         // precision map only shows where d=true
@@ -320,12 +383,21 @@ class DrawQuestion extends Component {
     } catch (e) { /* ignore */ }
   }
 
+  // Helper: shallow copy ImageData
+  copyImageData(imgData) {
+    const copy = new ImageData(new Uint8ClampedArray(imgData.data), imgData.width, imgData.height);
+    return copy;
+  }
+
   computeSimilarity() {
-    // Hybrid score using raw ink: precision (inter/ink) and recall (inter/target)
+    // Align ink to target center and compute precision/recall on aligned data for shape leniency
     try {
-      const drawnImg = this.ictx.getImageData(0,0,this.ink.width,this.ink.height);
-      const targetImg = this.hctx.getImageData(0,0,this.hidden.width,this.hidden.height);
-      const drawn = drawnImg.data;
+      const width = this.hidden.width, height = this.hidden.height;
+      const alignedInk = this.getAlignedInkImageData();
+      // Apply small dilation to make near-misses count
+      const dilatedInk = this.dilateAlpha(this.copyImageData(alignedInk), width, height, 1); // 1 iteration 3x3
+      const targetImg = this.hctx.getImageData(0,0,width,height);
+      const drawn = dilatedInk.data;
       const target = targetImg.data;
       let inter = 0, countDrawn = 0, countTarget = 0;
       const alphaThresh = 10;
@@ -338,16 +410,17 @@ class DrawQuestion extends Component {
       }
       const precision = countDrawn ? inter / countDrawn : 0;
       const recall = countTarget ? inter / countTarget : 0;
-      const score = (0.7 * precision) + (0.3 * recall);
-      // Enforce minimum recall to avoid trivial passes; then apply lenient score/precision
+      const score = (0.8 * precision) + (0.2 * recall);
+      // Enforce minimum recall to avoid trivial passes; then apply stricter score/precision thresholds
       const meetsRecall = recall >= 0.15;
-      const isCorrect = meetsRecall && (score >= 0.4 || precision >= 0.55);
+      const isCorrect = meetsRecall && (score >= 0.49 && precision >= 0.4);
       this.setState({ similarity: score, resultShown: true, resultCorrect: isCorrect, resultScore: score, resultPrecision: precision, resultRecall: recall }, ()=>{
         if (this.nextBtnRef && this.nextBtnRef.scrollIntoView) {
           this.nextBtnRef.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       });
-      this.buildResultPreviews(drawnImg);
+      // Use original aligned ink for visual overlay; use dilated for maps/scoring
+      this.buildResultPreviews(alignedInk);
     } catch (e) {
       // ignore
     }
@@ -384,6 +457,11 @@ class DrawQuestion extends Component {
     return kana;
   }
 
+  // Toggle prompt display between romaji and kana (hint)
+  togglePromptType = () => {
+    this.setState(({ promptType }) => ({ promptType: promptType === 'romaji' ? 'kana' : 'romaji' }));
+  }
+
   render() {
     const stageProgressPercentage = Math.round((this.state.stageProgress/quizSettings.stageLength[5])*100)+'%';
     const stageProgressPercentageStyle = { width: stageProgressPercentage };
@@ -393,20 +471,9 @@ class DrawQuestion extends Component {
     return (
       <div className="text-center question col-xs-12">
         <div className="previous-result none">Draw the character as accurately as you can.</div>
-        <div style={{margin:'6px 0', opacity:0.15, fontSize:'72px'}}>{promptText}</div>
+        <div style={{margin:'6px 0', fontSize:'72px'}}>{promptText}</div>
         <div>
           <canvas ref={c=>this.canvasRef=c} width={320} height={320} style={canvasStyle} />
-        </div>
-        {/* prompt type toggle */}
-        <div style={{marginTop:6}}>
-          <label style={{marginRight:12}}>
-            <input type="radio" name="promptType" checked={this.state.promptType==='kana'} onChange={()=>this.setState({promptType:'kana'})} />
-            &nbsp;Show kana
-          </label>
-          <label>
-            <input type="radio" name="promptType" checked={this.state.promptType==='romaji'} onChange={()=>this.setState({promptType:'romaji'})} />
-            &nbsp;Show romaji
-          </label>
         </div>
         {/* hint toggle */}
         <div style={{marginTop:6}}>
@@ -415,8 +482,6 @@ class DrawQuestion extends Component {
             &nbsp;Show hint (preview)
           </label>
         </div>
-        {/* similarity and actions */}
-        <div style={{marginTop:8}}>Similarity: {(this.state.similarity*100).toFixed(0)}%</div>
         {
           !this.state.resultShown ? (
             <div style={{marginTop:8}}>
@@ -471,6 +536,12 @@ class DrawQuestion extends Component {
             </div>
           )
         }
+        {/* prompt hint button at the bottom */}
+        <div style={{marginTop:8}}>
+          <button className="btn btn-default" onClick={this.togglePromptType}>
+            { this.state.promptType === 'romaji' ? 'Show kana hint' : 'Show romaji' }
+          </button>
+        </div>
         {/* progress bar */}
         <div className="progress" style={{marginTop:8}}>
           <div className="progress-bar progress-bar-info"
