@@ -347,7 +347,7 @@ class ChooseCharacters extends Component {
   }
 
   startGame(stage) {
-    if(this.state.selectedGroups.length < 1) {
+    if(stage !== 6 && this.state.selectedGroups.length < 1) {
       this.setState({ errMsg: 'Choose at least one character!'});
       return;
     }
