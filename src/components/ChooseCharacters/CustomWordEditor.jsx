@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getCustomWords, addCustomWord, removeCustomWord } from '../../data/wordDictionary';
+import { getCustomWords, addCustomWord, removeCustomWord, getWordDictionary, baseWordDictionary } from '../../data/wordDictionary';
 import './ChooseCharacters.scss';
 
 class CustomWordEditor extends Component {
@@ -10,8 +10,10 @@ class CustomWordEditor extends Component {
     english: '',
     kanji: '',
     error: '',
-    isExpanded: false,
-    showExport: false
+    showExport: false,
+    showFullExport: false,
+    showBaseWords: false,
+    baseWordFilter: ''
   }
 
   componentDidMount() {
@@ -63,12 +65,65 @@ class CustomWordEditor extends Component {
     this.loadCustomWords();
   }
 
-  toggleExpanded = () => {
-    this.setState(prevState => ({ isExpanded: !prevState.isExpanded }));
-  }
-
   toggleExport = () => {
     this.setState(prevState => ({ showExport: !prevState.showExport }));
+  }
+
+  toggleFullExport = () => {
+    this.setState(prevState => ({ showFullExport: !prevState.showFullExport }));
+  }
+
+  toggleBaseWords = () => {
+    this.setState(prevState => ({ showBaseWords: !prevState.showBaseWords, baseWordFilter: '' }));
+  }
+
+  handleBaseWordFilterChange = (e) => {
+    this.setState({ baseWordFilter: e.target.value });
+  }
+
+  copyWordToForm = (word) => {
+    this.setState({
+      japanese: word.japanese,
+      romaji: word.romaji,
+      english: word.english,
+      kanji: word.kanji || '',
+      error: ''
+    });
+  }
+
+  getFilteredBaseWords = () => {
+    const { baseWordFilter } = this.state;
+    if (!baseWordFilter.trim()) return baseWordDictionary;
+
+    const filter = baseWordFilter.toLowerCase().trim();
+    return baseWordDictionary.filter(word =>
+      word.japanese.includes(filter) ||
+      word.romaji.toLowerCase().includes(filter) ||
+      word.english.toLowerCase().includes(filter) ||
+      (word.kanji && word.kanji.includes(filter))
+    );
+  }
+
+  generateFullDictionaryCode = () => {
+    const fullDictionary = getWordDictionary();
+    if (fullDictionary.length === 0) return '// No words in dictionary';
+
+    const lines = fullDictionary.map(word => {
+      if (word.kanji) {
+        return `  { japanese: '${word.japanese}', romaji: '${word.romaji}', english: '${word.english}', kanji: '${word.kanji}' },`;
+      } else {
+        return `  { japanese: '${word.japanese}', romaji: '${word.romaji}', english: '${word.english}' },`;
+      }
+    });
+
+    return `export const wordDictionary = [\n${lines.join('\n')}\n];`;
+  }
+
+  copyFullDictionaryToClipboard = () => {
+    const exportCode = this.generateFullDictionaryCode();
+    navigator.clipboard.writeText(exportCode).catch(err => {
+      console.error('Failed to copy:', err);
+    });
   }
 
   generateExportCode = () => {
@@ -88,34 +143,87 @@ class CustomWordEditor extends Component {
 
   copyToClipboard = () => {
     const exportCode = this.generateExportCode();
-    navigator.clipboard.writeText(exportCode).then(() => {
-      this.setState({ error: '' });
-      alert('Copied to clipboard!');
-    }).catch(err => {
+    navigator.clipboard.writeText(exportCode).catch(err => {
       console.error('Failed to copy:', err);
     });
   }
 
   render() {
-    const { customWords, japanese, romaji, english, kanji, error, isExpanded } = this.state;
+    const { customWords, japanese, romaji, english, kanji, error } = this.state;
 
     return (
-      <div className="panel panel-default" style={{ marginTop: '15px' }}>
-        <div
-          className="panel-heading"
-          style={{ cursor: 'pointer' }}
-          onClick={this.toggleExpanded}
-        >
+      <div className="panel panel-default" style={{ marginTop: '15px', marginBottom: '200px' }}>
+        <div className="panel-heading">
           <strong>Custom Words</strong>
           <span style={{ float: 'right' }}>
             {customWords.length} word{customWords.length !== 1 ? 's' : ''}
-            {' '}
-            {isExpanded ? '▲' : '▼'}
           </span>
         </div>
 
-        {isExpanded && (
-          <div className="panel-body">
+        <div className="panel-body">
+            {/* Browse Base Words Section */}
+            <div style={{ marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '15px' }}>
+              <button
+                className="btn btn-sm btn-default"
+                onClick={this.toggleBaseWords}
+              >
+                {this.state.showBaseWords ? 'Hide Base Words' : 'Browse Base Words'} ({baseWordDictionary.length} words)
+              </button>
+
+              {this.state.showBaseWords && (
+                <div style={{ marginTop: '10px' }}>
+                  <p className="text-muted" style={{ fontSize: '12px', marginBottom: '8px' }}>
+                    Click on a word to copy it to the form above for editing. Add it as a custom word to override the original.
+                  </p>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search words..."
+                    value={this.state.baseWordFilter}
+                    onChange={this.handleBaseWordFilterChange}
+                    style={{ marginBottom: '10px' }}
+                  />
+                  <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                    <table className="table table-condensed table-hover" style={{ marginBottom: 0 }}>
+                      <thead>
+                        <tr>
+                          <th>Japanese</th>
+                          <th>Romaji</th>
+                          <th>English</th>
+                          <th>Kanji</th>
+                          <th style={{ width: '80px' }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {this.getFilteredBaseWords().map((word, idx) => (
+                          <tr key={idx}>
+                            <td>{word.japanese}</td>
+                            <td>{word.romaji}</td>
+                            <td>{word.english}</td>
+                            <td>{word.kanji || '-'}</td>
+                            <td>
+                              <button
+                                className="btn btn-xs btn-primary"
+                                onClick={() => this.copyWordToForm(word)}
+                                title="Copy to form for editing"
+                              >
+                                Edit
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {this.getFilteredBaseWords().length === 0 && (
+                      <p className="text-muted text-center" style={{ padding: '10px' }}>
+                        No words match your search.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Add new word form */}
             <form onSubmit={this.handleAddWord} style={{ marginBottom: '15px' }}>
               <div className="row">
@@ -235,6 +343,42 @@ class CustomWordEditor extends Component {
                       </button>
                     </div>
                   )}
+
+                  {/* Full Dictionary Export */}
+                  <button
+                    className="btn btn-sm btn-info"
+                    style={{ marginLeft: '10px' }}
+                    onClick={this.toggleFullExport}
+                  >
+                    {this.state.showFullExport ? 'Hide Full Dictionary' : 'Export Full Dictionary'}
+                  </button>
+
+                  {this.state.showFullExport && (
+                    <div style={{ marginTop: '10px' }}>
+                      <p className="text-muted" style={{ fontSize: '12px', marginBottom: '5px' }}>
+                        Full word dictionary (base words + custom words):
+                      </p>
+                      <textarea
+                        className="form-control"
+                        readOnly
+                        value={this.generateFullDictionaryCode()}
+                        style={{
+                          fontFamily: 'monospace',
+                          fontSize: '12px',
+                          height: '200px',
+                          resize: 'vertical'
+                        }}
+                        onClick={(e) => e.target.select()}
+                      />
+                      <button
+                        className="btn btn-sm btn-primary"
+                        style={{ marginTop: '8px' }}
+                        onClick={this.copyFullDictionaryToClipboard}
+                      >
+                        Copy Full Dictionary to Clipboard
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -243,7 +387,6 @@ class CustomWordEditor extends Component {
               </p>
             )}
           </div>
-        )}
       </div>
     );
   }

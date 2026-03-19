@@ -163,8 +163,16 @@ export function removeCustomWord(index) {
 }
 
 // Get combined word dictionary (base + custom)
+// Custom words take priority - if a custom word has the same Japanese text as a base word,
+// the base word is excluded to avoid duplicates
 export function getWordDictionary() {
-  return [...baseWordDictionary, ...getCustomWords()];
+  const customWords = getCustomWords();
+  const customJapaneseSet = new Set(customWords.map(w => w.japanese));
+
+  // Filter out base words that have been overridden by custom words
+  const filteredBaseWords = baseWordDictionary.filter(w => !customJapaneseSet.has(w.japanese));
+
+  return [...filteredBaseWords, ...customWords];
 }
 
 // For backward compatibility, also export as wordDictionary
