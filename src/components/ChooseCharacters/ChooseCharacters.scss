@@ -40,7 +40,10 @@
       background-color: #f4f4f4;
     }
   }
-  .choose-row:hover {
+  .choose-row {
+    cursor: pointer;
+  }
+  .choose-row .group-header {
     cursor: pointer;
   }
   .glyphicon {
@@ -86,6 +89,67 @@
   }
   .choose-row .romaji {
     color: #666;
+  }
+  .group-header {
+    cursor: pointer;
+    position: relative;
+    padding-right: 24px;
+  }
+  .expand-toggle {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7em;
+    color: #999;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 3px;
+    &:hover {
+      color: #333;
+      background: #e8e8e8;
+    }
+  }
+  .expanded-group {
+    background-color: #f9f9f9;
+  }
+  .char-grid {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 6px 4px 4px 20px;
+    gap: 4px;
+    border-top: 1px dashed #e0e0e0;
+  }
+  .char-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 3px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    background: #fff;
+    user-select: none;
+    transition: all 0.15s ease;
+    &:hover {
+      background: #f0f0f0;
+      border-color: #bbb;
+    }
+    &.char-selected {
+      background: #e8f5e9;
+      border-color: #4caf50;
+    }
+    .char-kana {
+      font-weight: 500;
+    }
+    .char-romaji {
+      color: #888;
+      font-size: 0.85em;
+    }
+  }
+  .glyphicon-tiny {
+    font-size: 0.7em;
   }
 }
 .error-message {
