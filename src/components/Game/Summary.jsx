@@ -20,7 +20,7 @@ class Summary extends Component {
           <div className="panel-body">
             <h2>Session Complete!</h2>
             <div style={{ fontSize: '48px', fontWeight: 'bold', margin: '20px 0' }}>
-              {percentage}%
+              {percentage}% accuracy
             </div>
             <p style={{ fontSize: '18px', color: '#666' }}>
               <span style={{ color: '#5cb85c' }}>{correctCount} correct</span>
