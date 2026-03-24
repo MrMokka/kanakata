@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { getCustomWords, addCustomWord, removeCustomWord, getWordDictionary, baseWordDictionary } from '../../data/wordDictionary';
+import { getCustomWords, addCustomWord, removeCustomWord, getWordDictionary, baseWordDictionary, addAllBaseWordsAsCustom, removeAllBaseWordsFromCustom } from '../../data/wordDictionary';
 import './ChooseCharacters.scss';
 
 class CustomWordEditor extends Component {
@@ -91,6 +91,23 @@ class CustomWordEditor extends Component {
     });
   }
 
+  handleAddAllBaseWords = () => {
+    addAllBaseWordsAsCustom();
+    this.loadCustomWords();
+  }
+
+  handleRemoveAllBaseWords = () => {
+    removeAllBaseWordsFromCustom();
+    this.loadCustomWords();
+  }
+
+  // Check how many base words are currently in custom words
+  getBaseWordsInCustomCount = () => {
+    const { customWords } = this.state;
+    const baseJapaneseSet = new Set(baseWordDictionary.map(w => w.japanese));
+    return customWords.filter(w => baseJapaneseSet.has(w.japanese)).length;
+  }
+
   getFilteredBaseWords = () => {
     const { baseWordFilter } = this.state;
     if (!baseWordFilter.trim()) return baseWordDictionary;
@@ -169,6 +186,24 @@ class CustomWordEditor extends Component {
               >
                 {this.state.showBaseWords ? 'Hide Base Words' : 'Browse Base Words'} ({baseWordDictionary.length} words)
               </button>
+              {' '}
+              <button
+                className="btn btn-sm btn-info"
+                onClick={this.handleAddAllBaseWords}
+                title="Add all base words as custom words so you can edit them"
+              >
+                Add All Base Words to Editor
+              </button>
+              {' '}
+              {this.getBaseWordsInCustomCount() > 0 && (
+                <button
+                  className="btn btn-sm btn-warning"
+                  onClick={this.handleRemoveAllBaseWords}
+                  title="Remove base words from custom list (keeps your own custom words)"
+                >
+                  Remove Base Words from Editor ({this.getBaseWordsInCustomCount()})
+                </button>
+              )}
 
               {this.state.showBaseWords && (
                 <div style={{ marginTop: '10px' }}>

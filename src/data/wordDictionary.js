@@ -162,6 +162,28 @@ export function removeCustomWord(index) {
   return customWords;
 }
 
+// Add all base words as custom words (so user can edit them)
+// Only adds base words that aren't already in custom words
+export function addAllBaseWordsAsCustom() {
+  const customWords = getCustomWords();
+  const customJapaneseSet = new Set(customWords.map(w => w.japanese));
+
+  const newWords = baseWordDictionary.filter(w => !customJapaneseSet.has(w.japanese));
+  const combined = [...customWords, ...newWords.map(w => ({ ...w }))];
+  saveCustomWords(combined);
+  return combined;
+}
+
+// Remove only base words from custom words list, keeping truly custom words
+export function removeAllBaseWordsFromCustom() {
+  const customWords = getCustomWords();
+  const baseJapaneseSet = new Set(baseWordDictionary.map(w => w.japanese));
+
+  const remaining = customWords.filter(w => !baseJapaneseSet.has(w.japanese));
+  saveCustomWords(remaining);
+  return remaining;
+}
+
 // Get combined word dictionary (base + custom)
 // Custom words take priority - if a custom word has the same Japanese text as a base word,
 // the base word is excluded to avoid duplicates
