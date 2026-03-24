@@ -13,7 +13,8 @@ class CustomWordEditor extends Component {
     showExport: false,
     showFullExport: false,
     showBaseWords: false,
-    baseWordFilter: ''
+    baseWordFilter: '',
+    customWordFilter: ''
   }
 
   componentDidMount() {
@@ -79,6 +80,23 @@ class CustomWordEditor extends Component {
 
   handleBaseWordFilterChange = (e) => {
     this.setState({ baseWordFilter: e.target.value });
+  }
+
+  handleCustomWordFilterChange = (e) => {
+    this.setState({ customWordFilter: e.target.value });
+  }
+
+  getFilteredCustomWords = () => {
+    const { customWords, customWordFilter } = this.state;
+    if (!customWordFilter.trim()) return customWords;
+
+    const filter = customWordFilter.toLowerCase().trim();
+    return customWords.filter(word =>
+      word.japanese.includes(filter) ||
+      word.romaji.toLowerCase().includes(filter) ||
+      word.english.toLowerCase().includes(filter) ||
+      (word.kanji && word.kanji.includes(filter))
+    );
   }
 
   copyWordToForm = (word) => {
@@ -310,6 +328,14 @@ class CustomWordEditor extends Component {
             {/* List of custom words */}
             {customWords.length > 0 ? (
               <div>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search custom words..."
+                  value={this.state.customWordFilter}
+                  onChange={this.handleCustomWordFilterChange}
+                  style={{ marginBottom: '10px' }}
+                />
                 <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
                   <table className="table table-condensed table-hover" style={{ marginBottom: 0 }}>
                     <thead>
@@ -322,25 +348,33 @@ class CustomWordEditor extends Component {
                       </tr>
                     </thead>
                     <tbody>
-                      {customWords.map((word, idx) => (
-                        <tr key={idx}>
-                          <td>{word.japanese}</td>
-                          <td>{word.romaji}</td>
-                          <td>{word.english}</td>
-                          <td>{word.kanji || '-'}</td>
-                          <td>
-                            <button
-                              className="btn btn-xs btn-danger"
-                              onClick={() => this.handleRemoveWord(idx)}
-                              title="Remove word"
-                            >
-                              ✕
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
+                      {this.getFilteredCustomWords().map((word) => {
+                        const realIndex = customWords.indexOf(word);
+                        return (
+                          <tr key={realIndex}>
+                            <td>{word.japanese}</td>
+                            <td>{word.romaji}</td>
+                            <td>{word.english}</td>
+                            <td>{word.kanji || '-'}</td>
+                            <td>
+                              <button
+                                className="btn btn-xs btn-danger"
+                                onClick={() => this.handleRemoveWord(realIndex)}
+                                title="Remove word"
+                              >
+                                ✕
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
+                  {this.getFilteredCustomWords().length === 0 && (
+                    <p className="text-muted text-center" style={{ padding: '10px' }}>
+                      No words match your search.
+                    </p>
+                  )}
                 </div>
 
                 {/* Export section */}
