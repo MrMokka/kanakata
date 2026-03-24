@@ -232,7 +232,10 @@ class WordTranslateQuestion extends Component {
           </button>
           {this.state.mode === 'jp-to-en' && (
             <button className="btn btn-xs btn-default" style={{ marginLeft: '8px' }} onClick={this.toggleKanji}>
-              {this.state.showKanji ? 'Show: Kana' : 'Show: Kanji'}
+              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <span style={this.state.showKanji ? {} : { visibility: 'hidden', height: 0, overflow: 'hidden' }}>Show: Kana</span>
+                <span style={this.state.showKanji ? { visibility: 'hidden', height: 0, overflow: 'hidden' } : {}}>Show: Kanji</span>
+              </span>
             </button>
           )}
         </div>
