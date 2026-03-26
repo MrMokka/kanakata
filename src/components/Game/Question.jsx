@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { kanaDictionary } from '../../data/kanaDictionary';
-import { quizSettings } from '../../data/quizSettings';
 import { findRomajisAtKanaKey, removeFromArray, arrayContains, shuffle, cartesianProduct } from '../../data/helperFuncs';
 import './Question.scss';
 
@@ -138,7 +137,7 @@ class Question extends Component {
     // Wrong answers don't reduce progress - user just needs X correct total
     this.setState({stageProgress: this.stageProgress});
 
-    if(this.stageProgress >= quizSettings.stageLength[this.props.stage]) {
+    if(this.stageProgress >= this.props.questionCount) {
       this.props.handleStageComplete(newResults);
     }
     else
@@ -242,7 +241,7 @@ class Question extends Component {
     let btnClass = "btn btn-default answer-button";
     if ('ontouchstart' in window)
       btnClass += " no-hover"; // disables hover effect on touch screens
-    let stageProgressPercentage = Math.round((this.state.stageProgress/quizSettings.stageLength[this.props.stage])*100)+'%';
+    let stageProgressPercentage = Math.round((this.state.stageProgress/this.props.questionCount)*100)+'%';
     let stageProgressPercentageStyle = { width: stageProgressPercentage }
     return (
       <div className="text-center question col-xs-12">
@@ -270,10 +269,10 @@ class Question extends Component {
             role="progressbar"
             aria-valuenow={this.state.stageProgress}
             aria-valuemin="0"
-            aria-valuemax={quizSettings.stageLength[this.props.stage]}
+            aria-valuemax={this.props.questionCount}
             style={stageProgressPercentageStyle}
           >
-            <span>Progress</span>
+            <span>{this.state.stageProgress}/{this.props.questionCount}</span>
           </div>
         </div>
       </div>

@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { getWordDictionary } from '../../data/wordDictionary';
-import { quizSettings } from '../../data/quizSettings';
 import { shuffle } from '../../data/helperFuncs';
 import './Question.scss';
 
@@ -131,7 +130,7 @@ class WordTranslateQuestion extends Component {
     // Wrong answers don't reduce progress - user just needs X correct total
     this.setState({ stageProgress: this.stageProgress });
 
-    if (this.stageProgress >= quizSettings.stageLength[6]) {
+    if (this.stageProgress >= this.props.questionCount) {
       this.props.handleStageComplete(newResults);
     } else {
       this.setNewQuestion();
@@ -205,7 +204,7 @@ class WordTranslateQuestion extends Component {
   }
 
   render() {
-    const stageProgressPercentage = Math.round((this.state.stageProgress / quizSettings.stageLength[6]) * 100) + '%';
+    const stageProgressPercentage = Math.round((this.state.stageProgress / this.props.questionCount) * 100) + '%';
     const stageProgressPercentageStyle = { width: stageProgressPercentage };
 
     return (
@@ -245,10 +244,10 @@ class WordTranslateQuestion extends Component {
             role="progressbar"
             aria-valuenow={this.state.stageProgress}
             aria-valuemin="0"
-            aria-valuemax={quizSettings.stageLength[6]}
+            aria-valuemax={this.props.questionCount}
             style={stageProgressPercentageStyle}
           >
-            <span>Progress</span>
+            <span>{this.state.stageProgress}/{this.props.questionCount}</span>
           </div>
         </div>
       </div>

@@ -31,11 +31,11 @@ class Game extends Component {
       <div>
         {
           this.props.stage === 6 ?
-            <WordTranslateQuestion handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
+            <WordTranslateQuestion handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} questionCount={this.props.questionCount} />
           : this.props.stage === 5 ?
-            <DrawQuestion handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
+            <DrawQuestion handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} questionCount={this.props.questionCount} />
           :
-            <Question handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} />
+            <Question handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} questionCount={this.props.questionCount} />
         }
       </div>
     );

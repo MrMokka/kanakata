@@ -73,7 +73,8 @@ class ChooseCharacters extends Component {
     selectedGroups: migrateSelections(this.props.selectedGroups || []),
     showAlternatives: [],
     showSimilars: [],
-    startIsVisible: true
+    startIsVisible: true,
+    questionCount: 15
   }
 
   stageDescriptions = [
@@ -351,7 +352,8 @@ class ChooseCharacters extends Component {
       this.setState({ errMsg: 'Choose at least one character!'});
       return;
     }
-    this.props.handleStartGame(this.state.selectedGroups, stage);
+    const count = Math.max(1, parseInt(this.state.questionCount, 10) || 15);
+    this.props.handleStartGame(this.state.selectedGroups, stage, count);
   }
 
   render() {
@@ -375,6 +377,17 @@ class ChooseCharacters extends Component {
             }
             <div ref={c => this.startRef = c}>
               <p style={{ marginBottom: '10px', color: '#666' }}>Choose a game mode:</p>
+              <div style={{ marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <label style={{ margin: 0, fontWeight: 'normal', color: '#666' }}>Questions:</label>
+                <input
+                  type="number"
+                  min="1"
+                  className="form-control"
+                  value={this.state.questionCount}
+                  onChange={(e) => this.setState({ questionCount: e.target.value })}
+                  style={{ width: '70px', display: 'inline-block', textAlign: 'center' }}
+                />
+              </div>
               <div className="stage-buttons">
                 {this.stageDescriptions.map(({ stage, title, description }) => (
                   <button

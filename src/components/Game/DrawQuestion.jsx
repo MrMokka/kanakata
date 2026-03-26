@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { kanaDictionary } from '../../data/kanaDictionary';
-import { quizSettings } from '../../data/quizSettings';
 import { removeFromArray, arrayContains, shuffle, findRomajisAtKanaKey } from '../../data/helperFuncs';
 
 /*
@@ -457,7 +456,7 @@ class DrawQuestion extends Component {
     // Wrong answers don't reduce progress - user just needs X correct total
     this.setState({stageProgress: this.stageProgress});
 
-    if(this.stageProgress >= quizSettings.stageLength[5]) {
+    if(this.stageProgress >= this.props.questionCount) {
       this.props.handleStageComplete(newResults);
     }
     else
@@ -480,7 +479,7 @@ class DrawQuestion extends Component {
   }
 
   render() {
-    const stageProgressPercentage = Math.round((this.state.stageProgress/quizSettings.stageLength[5])*100)+'%';
+    const stageProgressPercentage = Math.round((this.state.stageProgress/this.props.questionCount)*100)+'%';
     const stageProgressPercentageStyle = { width: stageProgressPercentage };
     const kana = this.state.currentQuestion[0] || '';
     const canvasStyle = { border:'1px solid #ccc', touchAction:'none', pointerEvents: this.state.resultShown ? 'none' : 'auto' };
@@ -565,10 +564,10 @@ class DrawQuestion extends Component {
             role="progressbar"
             aria-valuenow={this.state.stageProgress}
             aria-valuemin="0"
-            aria-valuemax={quizSettings.stageLength[5]}
+            aria-valuemax={this.props.questionCount}
             style={stageProgressPercentageStyle}
           >
-            <span>Progress</span>
+            <span>{this.state.stageProgress}/{this.props.questionCount}</span>
           </div>
         </div>
       </div>
