@@ -11,6 +11,7 @@ Stage 6: Word Translation Game
 */
 
 const WordTranslateQuestion = ({ stage, decidedGroups, questionCount, handleStageComplete }) => {
+  const [gameStarted, setGameStarted] = useState(false);
   const [previousQuestion, setPreviousQuestion] = useState(null);
   const [previousAnswer, setPreviousAnswer] = useState('');
   const [previousCorrectAnswer, setPreviousCorrectAnswer] = useState('');
@@ -59,13 +60,12 @@ const WordTranslateQuestion = ({ stage, decidedGroups, questionCount, handleStag
     setCurrentQuestion(question);
   }, [getRandomWords]);
 
-  useEffect(() => {
-    if (availableWordsRef.current.length > 0 || true) {
-      // Initialize on mount
-      availableWordsRef.current = getWordDictionary();
-      setNewQuestion();
-    }
-  }, []);
+  const startGame = (selectedMode) => {
+    setMode(selectedMode);
+    setGameStarted(true);
+    availableWordsRef.current = getWordDictionary();
+    setNewQuestion();
+  };
 
   const handleAnswer = useCallback((answer) => {
     const answerTrimmed = answer.trim().toLowerCase();
@@ -91,11 +91,11 @@ const WordTranslateQuestion = ({ stage, decidedGroups, questionCount, handleStag
 
     let correctAnswerDisplay;
     if (mode === 'jp-to-en') {
-      correctAnswerDisplay = `${word.english} / ${word.romaji}`;
+      correctAnswerDisplay = word.english;
     } else {
       correctAnswerDisplay = word.kanji
-        ? `${word.japanese} / ${word.kanji} / ${word.romaji}`
-        : `${word.japanese} / ${word.romaji}`;
+        ? `${word.japanese} / ${word.kanji}`
+        : word.japanese;
     }
 
     const questionDisplay = mode === 'jp-to-en'
@@ -145,17 +145,8 @@ const WordTranslateQuestion = ({ stage, decidedGroups, questionCount, handleStag
     }
   };
 
-  const toggleMode = () => {
-    setMode(prevMode => {
-      const newMode = prevMode === 'jp-to-en' ? 'en-to-jp' : 'jp-to-en';
-      setCurrentAnswer('');
-      setTimeout(() => setNewQuestion(), 0);
-      return newMode;
-    });
-  };
-
-  const toggleKanji = () => {
-    setShowKanji(prev => !prev);
+  const handleSkip = () => {
+    handleAnswer('');
   };
 
   const getShowableQuestion = () => {
@@ -199,6 +190,45 @@ const WordTranslateQuestion = ({ stage, decidedGroups, questionCount, handleStag
     }
   };
 
+  // Start page - select translation direction
+  if (!gameStarted) {
+    return (
+      <div className="text-center question col-xs-12">
+        <div className="panel panel-default" style={{ marginTop: '40px', maxWidth: '400px', margin: '40px auto' }}>
+          <div className="panel-heading">
+            <h4 style={{ margin: 0 }}>Word Translation</h4>
+          </div>
+          <div className="panel-body">
+            <p style={{ marginBottom: '20px', color: '#666' }}>
+              Choose your translation direction:
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <button
+                className="btn btn-danger btn-lg"
+                onClick={() => startGame('jp-to-en')}
+                style={{ padding: '15px 30px' }}
+              >
+                <div style={{ fontSize: '24px', marginBottom: '4px' }}>日本語 → English</div>
+                <div style={{ fontSize: '14px', opacity: 0.8 }}>See Japanese, type English</div>
+              </button>
+              <button
+                className="btn btn-danger btn-lg"
+                onClick={() => startGame('en-to-jp')}
+                style={{ padding: '15px 30px' }}
+              >
+                <div style={{ fontSize: '24px', marginBottom: '4px' }}>English → 日本語</div>
+                <div style={{ fontSize: '14px', opacity: 0.8 }}>See English, type Japanese/Romaji</div>
+              </button>
+            </div>
+            <p style={{ marginTop: '20px', fontSize: '13px', color: '#999' }}>
+              {questionCount} questions
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const stageProgressPercentage = Math.round((stageProgress / questionCount) * 100) + '%';
   const stageProgressPercentageStyle = { width: stageProgressPercentage };
 
@@ -220,19 +250,23 @@ const WordTranslateQuestion = ({ stage, decidedGroups, questionCount, handleStag
           />
         </form>
       </div>
-      <div style={{ marginTop: '12px' }}>
-        <button className="btn btn-xs btn-default" onClick={toggleMode}>
-          {mode === 'jp-to-en' ? 'Switch to: English → Japanese' : 'Switch to: Japanese → English'}
+      <div style={{ marginTop: '8px' }}>
+        <button className="btn btn-xs btn-default" onClick={handleSkip}>
+          Skip
         </button>
-        {mode === 'jp-to-en' && (
-          <button className="btn btn-xs btn-default" style={{ marginLeft: '8px' }} onClick={toggleKanji}>
-            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={showKanji ? {} : { visibility: 'hidden', height: 0, overflow: 'hidden' }}>Show: Kana</span>
-              <span style={showKanji ? { visibility: 'hidden', height: 0, overflow: 'hidden' } : {}}>Show: Kanji</span>
-            </span>
-          </button>
-        )}
       </div>
+      {mode === 'jp-to-en' && (
+        <div style={{ marginTop: '12px' }}>
+          <label style={{ cursor: 'pointer', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              checked={showKanji}
+              onChange={(e) => setShowKanji(e.target.checked)}
+            />
+            &nbsp;Show Kanji
+          </label>
+        </div>
+      )}
       <div className="progress" style={{ marginTop: '16px' }}>
         <div
           className="progress-bar progress-bar-info"
