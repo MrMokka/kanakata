@@ -20,7 +20,7 @@ const WordTranslateQuestion = ({ stage, decidedGroups, questionCount, handleStag
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [stageProgress, setStageProgress] = useState(0);
   const [mode, setMode] = useState('jp-to-en');
-  const [showKanji, setShowKanji] = useState(false);
+  const [showKanji, setShowKanji] = useState(true);
   const [results, setResults] = useState([]);
 
   const availableWordsRef = useRef([]);
