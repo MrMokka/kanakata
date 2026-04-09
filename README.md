@@ -1,7 +1,9 @@
-# Kana Quiz
-Kana Quiz made with React.js.
+# KanaKata
+Japanese practice tool made with React.js - for hiragana, katakana, kanji and words.
 
-See live at https://kana.pro/
+Forked from https://github.com/anzzstuff/kanaquiz
+
+See live at {insert future url here}
 
 
 Install deps: `npm install`

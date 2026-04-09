@@ -1,7 +1,7 @@
 {
-  "name": "kanaquiz",
-  "version": "2.1.0",
-  "description": "Application for studying hiragana & katakana characters.",
+  "name": "kanakata",
+  "version": "1.0.0",
+  "description": "Application for practicing Japanese - hiragana, katakana, kanji, and words.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/anzzstuff/kanaquiz.git"
+    "url": "git+https://github.com/MrMokka/kanakata.git"
   },
-  "author": "Antti Pilto",
+  "author": "MrMokka",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/anzzstuff/kanaquiz/issues"
+    "url": "https://github.com/MrMokka/kanakata/issues"
   },
-  "homepage": "https://github.com/anzzstuff/kanaquiz#readme",
+  "homepage": "https://github.com/MrMokka/kanakata#readme",
   "browserslist": [
     ">0.25%",
     "not dead"
