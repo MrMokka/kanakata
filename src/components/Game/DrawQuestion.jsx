@@ -178,6 +178,8 @@ const DrawQuestion = ({ stage, decidedGroups, questionCount, handleStageComplete
     hctx.globalAlpha = 1.0;
   }, []);
 
+  const showHintRef = useRef(false);
+
   const setNewQuestion = useCallback(() => {
     const newQuestion = getRandomKanas(1, false, previousQuestionRef.current);
     currentQuestionRef.current = newQuestion;
@@ -185,7 +187,7 @@ const DrawQuestion = ({ stage, decidedGroups, questionCount, handleStageComplete
     setPromptType('romaji');
     clearCanvas();
     renderTargetToHidden();
-    recomposeVisible(false);
+    recomposeVisible(showHintRef.current);
   }, [getRandomKanas, clearCanvas, renderTargetToHidden, recomposeVisible]);
 
   const initCanvas = useCallback(() => {
@@ -520,6 +522,7 @@ const DrawQuestion = ({ stage, decidedGroups, questionCount, handleStageComplete
 
   const handleHintChange = (checked) => {
     setShowHint(checked);
+    showHintRef.current = checked;
     renderTargetToHidden();
     recomposeVisible(checked);
   };
