@@ -1,44 +1,40 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import ChooseCharacters from '../ChooseCharacters/ChooseCharacters';
 import Game from '../Game/Game';
 
-class GameContainer extends Component {
-  state = {
-    stage: 1,
-    decidedGroups: JSON.parse(localStorage.getItem('decidedGroups') || null) || [],
-    questionCount: 15
-  }
+const GameContainer = ({ gameState, handleStartGame, handleEndGame }) => {
+  const [stage, setStage] = useState(1);
+  const [decidedGroups, setDecidedGroups] = useState(
+    JSON.parse(localStorage.getItem('decidedGroups') || null) || []
+  );
+  const [questionCount, setQuestionCount] = useState(15);
 
-  startGame = (decidedGroups, stage, questionCount) => {
-    this.setState({
-      decidedGroups: decidedGroups,
-      stage: stage,
-      questionCount: questionCount
-    });
-    localStorage.setItem('decidedGroups', JSON.stringify(decidedGroups));
-    this.props.handleStartGame();
-  }
+  const startGame = (groups, stageNum, count) => {
+    setDecidedGroups(groups);
+    setStage(stageNum);
+    setQuestionCount(count);
+    localStorage.setItem('decidedGroups', JSON.stringify(groups));
+    handleStartGame();
+  };
 
-  render() {
-    return (
-      <div>
-        { this.props.gameState==='chooseCharacters' &&
-            <ChooseCharacters
-              selectedGroups={this.state.decidedGroups}
-              handleStartGame={this.startGame}
-            />
-          }
-          { this.props.gameState==='game' &&
-              <Game
-                decidedGroups={this.state.decidedGroups}
-                handleEndGame={this.props.handleEndGame}
-                stage={this.state.stage}
-                questionCount={this.state.questionCount}
-              />
-          }
-        </div>
-    )
-  }
-}
+  return (
+    <div>
+      {gameState === 'chooseCharacters' && (
+        <ChooseCharacters
+          selectedGroups={decidedGroups}
+          handleStartGame={startGame}
+        />
+      )}
+      {gameState === 'game' && (
+        <Game
+          decidedGroups={decidedGroups}
+          handleEndGame={handleEndGame}
+          stage={stage}
+          questionCount={questionCount}
+        />
+      )}
+    </div>
+  );
+};
 
 export default GameContainer;

@@ -1,199 +1,153 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { kanaDictionary } from '../../data/kanaDictionary';
 import { findRomajisAtKanaKey, removeFromArray, arrayContains, shuffle, cartesianProduct } from '../../data/helperFuncs';
 import './Question.scss';
 
-class Question extends Component {
-  state = {
-    previousQuestion: [],
-    previousAnswer: '',
-    currentAnswer: '',
-    currentQuestion: [],
-    answerOptions: [],
-    stageProgress: 0,
-    results: [] // Track all answers for summary
-  }
-    // this.setNewQuestion = this.setNewQuestion.bind(this);
-    // this.handleAnswer = this.handleAnswer.bind(this);
-    // this.handleAnswerChange = this.handleAnswerChange.bind(this);
-    // this.handleSubmit = this.handleSubmit.bind(this);
-  // }
+const Question = ({ stage, decidedGroups, questionCount, handleStageComplete }) => {
+  const [previousQuestion, setPreviousQuestion] = useState([]);
+  const [previousAnswer, setPreviousAnswer] = useState('');
+  const [currentAnswer, setCurrentAnswer] = useState('');
+  const [currentQuestion, setCurrentQuestion] = useState([]);
+  const [answerOptions, setAnswerOptions] = useState([]);
+  const [stageProgress, setStageProgress] = useState(0);
+  const [results, setResults] = useState([]);
 
-  getRandomKanas(amount, include, exclude) {
-    let randomizedKanas = this.askableKanaKeys.slice();
+  // Use refs for mutable values that don't need to trigger re-renders
+  const askableKanasRef = useRef({});
+  const askableKanaKeysRef = useRef([]);
+  const askableRomajisRef = useRef([]);
+  const previousQuestionRef = useRef([]);
+  const previousAllowedAnswersRef = useRef([]);
+  const allowedAnswersRef = useRef([]);
+  const currentQuestionRef = useRef([]);
+  const stageProgressRef = useRef(0);
+  const resultsRef = useRef([]);
 
-    if(exclude && exclude.length > 0) {
-      // we're excluding previous question when deciding a new question
+  const initializeCharacters = useCallback(() => {
+    const askableKanas = {};
+    const askableKanaKeys = [];
+    const askableRomajis = [];
+
+    Object.keys(kanaDictionary).forEach(whichKana => {
+      Object.keys(kanaDictionary[whichKana]).forEach(groupName => {
+        if (arrayContains(groupName, decidedGroups)) {
+          Object.assign(askableKanas, kanaDictionary[whichKana][groupName]['characters']);
+          Object.keys(kanaDictionary[whichKana][groupName]['characters']).forEach(key => {
+            askableKanaKeys.push(key);
+            askableRomajis.push(kanaDictionary[whichKana][groupName]['characters'][key][0]);
+          });
+        }
+      });
+    });
+
+    askableKanasRef.current = askableKanas;
+    askableKanaKeysRef.current = askableKanaKeys;
+    askableRomajisRef.current = askableRomajis;
+    previousQuestionRef.current = [];
+    stageProgressRef.current = 0;
+    resultsRef.current = [];
+  }, [decidedGroups]);
+
+  const getRandomKanas = useCallback((amount, include, exclude) => {
+    let randomizedKanas = askableKanaKeysRef.current.slice();
+
+    if (exclude && exclude.length > 0) {
       randomizedKanas = removeFromArray(exclude, randomizedKanas);
     }
 
-    if(include && include.length > 0) {
-      // we arrive here when we're deciding answer options (included = currentQuestion)
-
-      // remove included kana
+    if (include && include.length > 0) {
       randomizedKanas = removeFromArray(include, randomizedKanas);
       shuffle(randomizedKanas);
+      randomizedKanas = randomizedKanas.slice(0, 20);
 
-      // cut the size to make looping quicker
-      randomizedKanas = randomizedKanas.slice(0,20);
-
-      // let's remove kanas that have the same answer as included
       let searchFor = findRomajisAtKanaKey(include, kanaDictionary)[0];
       randomizedKanas = randomizedKanas.filter(character => {
-        return searchFor!=findRomajisAtKanaKey(character, kanaDictionary)[0];
+        return searchFor !== findRomajisAtKanaKey(character, kanaDictionary)[0];
       });
 
-      // now let's remove "duplicate" kanas (if two kanas have same answers)
       let tempRandomizedKanas = randomizedKanas.slice();
       randomizedKanas = randomizedKanas.filter(r => {
         let dupeFound = false;
         searchFor = findRomajisAtKanaKey(r, kanaDictionary)[0];
         tempRandomizedKanas.shift();
         tempRandomizedKanas.forEach(w => {
-          if(findRomajisAtKanaKey(w, kanaDictionary)[0]==searchFor)
+          if (findRomajisAtKanaKey(w, kanaDictionary)[0] === searchFor)
             dupeFound = true;
         });
         return !dupeFound;
       });
 
-      // alright, let's cut the array and add included to the end
-      randomizedKanas = randomizedKanas.slice(0, amount-1); // -1 so we have room to add included
+      randomizedKanas = randomizedKanas.slice(0, amount - 1);
       randomizedKanas.push(include);
       shuffle(randomizedKanas);
-    }
-    else {
+    } else {
       shuffle(randomizedKanas);
       randomizedKanas = randomizedKanas.slice(0, amount);
     }
     return randomizedKanas;
-  }
+  }, []);
 
-  setNewQuestion() {
-    if(this.props.stage!=4)
-      this.currentQuestion = this.getRandomKanas(1, false, this.previousQuestion);
-    else
-      this.currentQuestion = this.getRandomKanas(3, false, this.previousQuestion);
-    this.setState({currentQuestion: this.currentQuestion});
-    this.setAnswerOptions();
-    this.setAllowedAnswers();
-    // console.log(this.currentQuestion);
-  }
-
-  setAnswerOptions() {
-    this.answerOptions = this.getRandomKanas(3, this.currentQuestion[0], false);
-    this.setState({answerOptions: this.answerOptions});
-    // console.log(this.answerOptions);
-  }
-
-  setAllowedAnswers() {
-    // console.log(this.currentQuestion);
-    this.allowedAnswers = [];
-    if(this.props.stage==1 || this.props.stage==3)
-      this.allowedAnswers = findRomajisAtKanaKey(this.currentQuestion, kanaDictionary);
-    else if(this.props.stage==2)
-      this.allowedAnswers = this.currentQuestion;
-    else if(this.props.stage==4) {
+  const setAllowedAnswers = useCallback((question) => {
+    let allowed = [];
+    if (stage === 1 || stage === 3)
+      allowed = findRomajisAtKanaKey(question, kanaDictionary);
+    else if (stage === 2)
+      allowed = question;
+    else if (stage === 4) {
       let tempAllowedAnswers = [];
-
-      this.currentQuestion.forEach(key => {
+      question.forEach(key => {
         tempAllowedAnswers.push(findRomajisAtKanaKey(key, kanaDictionary));
       });
-
       cartesianProduct(tempAllowedAnswers).forEach(answer => {
-        this.allowedAnswers.push(answer.join(''));
+        allowed.push(answer.join(''));
       });
     }
-    // console.log(this.allowedAnswers);
-  }
+    allowedAnswersRef.current = allowed;
+  }, [stage]);
 
-  handleAnswer = answer => {
-    if(this.props.stage<=2) document.activeElement.blur(); // reset answer button's :active
-    this.previousQuestion = this.currentQuestion;
-    this.setState({previousQuestion: this.previousQuestion});
-    this.previousAnswer = answer;
-    this.setState({previousAnswer: this.previousAnswer});
-    this.previousAllowedAnswers = this.allowedAnswers;
-
-    const isCorrect = this.isInAllowedAnswers(answer);
-
-    // Build result entry for summary
-    const questionDisplay = this.props.stage === 2
-      ? findRomajisAtKanaKey(this.currentQuestion, kanaDictionary)[0]
-      : this.currentQuestion.join('');
-    const correctAnswerDisplay = this.allowedAnswers[0];
-
-    const resultEntry = {
-      question: questionDisplay,
-      correctAnswer: correctAnswerDisplay,
-      userAnswer: answer,
-      correct: isCorrect
-    };
-
-    const newResults = [...this.state.results, resultEntry];
-    this.setState({ results: newResults });
-
-    if(isCorrect)
-      this.stageProgress = this.stageProgress+1;
-    // Wrong answers don't reduce progress - user just needs X correct total
-    this.setState({stageProgress: this.stageProgress});
-
-    if(this.stageProgress >= this.props.questionCount) {
-      this.props.handleStageComplete(newResults);
-    }
+  const setNewQuestion = useCallback(() => {
+    let newQuestion;
+    if (stage !== 4)
+      newQuestion = getRandomKanas(1, false, previousQuestionRef.current);
     else
-      this.setNewQuestion();
-  }
+      newQuestion = getRandomKanas(3, false, previousQuestionRef.current);
 
-  initializeCharacters() {
-    this.askableKanas = {};
-    this.askableKanaKeys = [];
-    this.askableRomajis = [];
-    this.previousQuestion = '';
-    this.previousAnswer = '';
-    this.stageProgress = 0;
-    Object.keys(kanaDictionary).forEach(whichKana => {
-      // console.log(whichKana); // 'hiragana' or 'katakana'
-      Object.keys(kanaDictionary[whichKana]).forEach(groupName => {
-        // console.log(groupName); // 'h_group1', ...
-        // do we want to include this group?
-        if(arrayContains(groupName, this.props.decidedGroups)) {
-          // let's merge the group to our askableKanas
-          this.askableKanas = Object.assign(this.askableKanas, kanaDictionary[whichKana][groupName]['characters']);
-          Object.keys(kanaDictionary[whichKana][groupName]['characters']).forEach(key => {
-            // let's add all askable kana keys to array
-            this.askableKanaKeys.push(key);
-            this.askableRomajis.push(kanaDictionary[whichKana][groupName]['characters'][key][0]);
-          });
-        }
-      });
-    });
-    // console.log(this.askableKanas);
-  }
+    currentQuestionRef.current = newQuestion;
+    setCurrentQuestion(newQuestion);
 
-  getAnswerType() {
-    if(this.props.stage==2) return 'kana';
+    const newAnswerOptions = getRandomKanas(3, newQuestion[0], false);
+    setAnswerOptions(newAnswerOptions);
+
+    setAllowedAnswers(newQuestion);
+  }, [stage, getRandomKanas, setAllowedAnswers]);
+
+  const getAnswerType = () => {
+    if (stage === 2) return 'kana';
     else return 'romaji';
-  }
+  };
 
-  getShowableQuestion() {
-    if(this.getAnswerType()=='kana')
-      return findRomajisAtKanaKey(this.state.currentQuestion, kanaDictionary)[0];
-    else return this.state.currentQuestion;
-  }
+  const getShowableQuestion = () => {
+    if (getAnswerType() === 'kana')
+      return findRomajisAtKanaKey(currentQuestion, kanaDictionary)[0];
+    else return currentQuestion;
+  };
 
-  getPreviousResult() {
-    let resultString='';
-    // console.log(this.previousAnswer);
-    if(this.previousQuestion=='')
-      resultString = <div className="previous-result none">Let's go! Which character is this?</div>
+  const isInAllowedAnswers = (answer) => {
+    return arrayContains(answer, previousAllowedAnswersRef.current);
+  };
+
+  const getPreviousResult = () => {
+    let resultString = '';
+    if (previousQuestion.length === 0)
+      resultString = <div className="previous-result none">Let's go! Which character is this?</div>;
     else {
       let rightAnswer = (
-        this.props.stage==2 ?
-          findRomajisAtKanaKey(this.previousQuestion, kanaDictionary)[0]
-          : this.previousQuestion.join('')
-        )+' = '+ this.previousAllowedAnswers[0];
+        stage === 2 ?
+          findRomajisAtKanaKey(previousQuestion, kanaDictionary)[0]
+          : previousQuestion.join('')
+      ) + ' = ' + previousAllowedAnswersRef.current[0];
 
-      if(this.isInAllowedAnswers(this.previousAnswer))
+      if (isInAllowedAnswers(previousAnswer))
         resultString = (
           <div className="previous-result correct" title="Correct answer!">
             <span className="pull-left glyphicon glyphicon-none"></span>{rightAnswer}<span className="pull-right glyphicon glyphicon-ok"></span>
@@ -207,91 +161,123 @@ class Question extends Component {
         );
     }
     return resultString;
-  }
+  };
 
-  isInAllowedAnswers(previousAnswer) {
-    // console.log(previousAnswer);
-    // console.log(this.allowedAnswers);
-    if(arrayContains(previousAnswer, this.previousAllowedAnswers))
-      return true;
-    else return false;
-  }
+  const handleAnswer = useCallback((answer) => {
+    if (stage <= 2) document.activeElement.blur();
 
-  handleAnswerChange = e => {
-    this.setState({currentAnswer: e.target.value.replace(/\s+/g, '')});
-  }
+    previousQuestionRef.current = currentQuestionRef.current;
+    setPreviousQuestion(currentQuestionRef.current);
+    setPreviousAnswer(answer);
+    previousAllowedAnswersRef.current = allowedAnswersRef.current;
 
-  handleSubmit = e => {
-    e.preventDefault();
-    if(this.state.currentAnswer!='') {
-      this.handleAnswer(this.state.currentAnswer.toLowerCase());
-      this.setState({currentAnswer: ''});
+    const isCorrect = arrayContains(answer, allowedAnswersRef.current);
+
+    const questionDisplay = stage === 2
+      ? findRomajisAtKanaKey(currentQuestionRef.current, kanaDictionary)[0]
+      : currentQuestionRef.current.join('');
+    const correctAnswerDisplay = allowedAnswersRef.current[0];
+
+    const resultEntry = {
+      question: questionDisplay,
+      correctAnswer: correctAnswerDisplay,
+      userAnswer: answer,
+      correct: isCorrect
+    };
+
+    const newResults = [...resultsRef.current, resultEntry];
+    resultsRef.current = newResults;
+    setResults(newResults);
+
+    if (isCorrect) {
+      stageProgressRef.current = stageProgressRef.current + 1;
     }
-  }
+    setStageProgress(stageProgressRef.current);
 
-  componentWillMount() {
-    this.initializeCharacters();
-  }
+    if (stageProgressRef.current >= questionCount) {
+      handleStageComplete(newResults);
+    } else {
+      setNewQuestion();
+    }
+  }, [stage, questionCount, handleStageComplete, setNewQuestion]);
 
-  componentDidMount() {
-    this.setNewQuestion();
-  }
+  const handleAnswerChange = (e) => {
+    setCurrentAnswer(e.target.value.replace(/\s+/g, ''));
+  };
 
-  render() {
-    let btnClass = "btn btn-default answer-button";
-    if ('ontouchstart' in window)
-      btnClass += " no-hover"; // disables hover effect on touch screens
-    let stageProgressPercentage = Math.round((this.state.stageProgress/this.props.questionCount)*100)+'%';
-    let stageProgressPercentageStyle = { width: stageProgressPercentage }
-    return (
-      <div className="text-center question col-xs-12">
-        {this.getPreviousResult()}
-        <div className="big-character">{this.getShowableQuestion()}</div>
-        <div className="answer-container">
-          {
-            this.props.stage<3 ?
-              this.state.answerOptions.map((answer, idx) => {
-                return <AnswerButton answer={answer}
-                  className={btnClass}
-                  key={idx}
-                  answertype={this.getAnswerType()}
-                  handleAnswer={this.handleAnswer} />
-              })
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (currentAnswer !== '') {
+      handleAnswer(currentAnswer.toLowerCase());
+      setCurrentAnswer('');
+    }
+  };
+
+  useEffect(() => {
+    initializeCharacters();
+  }, [initializeCharacters]);
+
+  useEffect(() => {
+    if (askableKanaKeysRef.current.length > 0) {
+      setNewQuestion();
+    }
+  }, []);
+
+  let btnClass = "btn btn-default answer-button";
+  if ('ontouchstart' in window)
+    btnClass += " no-hover";
+
+  let stageProgressPercentage = Math.round((stageProgress / questionCount) * 100) + '%';
+  let stageProgressPercentageStyle = { width: stageProgressPercentage };
+
+  return (
+    <div className="text-center question col-xs-12">
+      {getPreviousResult()}
+      <div className="big-character">{getShowableQuestion()}</div>
+      <div className="answer-container">
+        {
+          stage < 3 ?
+            answerOptions.map((answer, idx) => {
+              return <AnswerButton
+                answer={answer}
+                className={btnClass}
+                key={idx}
+                answertype={getAnswerType()}
+                handleAnswer={handleAnswer}
+              />;
+            })
             : <div className="answer-form-container">
-                <form onSubmit={this.handleSubmit}>
-                  <input autoFocus className="answer-input" type="text" value={this.state.currentAnswer} onChange={this.handleAnswerChange} />
-                </form>
-              </div>
-          }
-        </div>
-        <div className="progress">
-          <div className="progress-bar progress-bar-info"
-            role="progressbar"
-            aria-valuenow={this.state.stageProgress}
-            aria-valuemin="0"
-            aria-valuemax={this.props.questionCount}
-            style={stageProgressPercentageStyle}
-          >
-            <span>{this.state.stageProgress}/{this.props.questionCount}</span>
-          </div>
+              <form onSubmit={handleSubmit}>
+                <input autoFocus className="answer-input" type="text" value={currentAnswer} onChange={handleAnswerChange} />
+              </form>
+            </div>
+        }
+      </div>
+      <div className="progress">
+        <div className="progress-bar progress-bar-info"
+          role="progressbar"
+          aria-valuenow={stageProgress}
+          aria-valuemin="0"
+          aria-valuemax={questionCount}
+          style={stageProgressPercentageStyle}
+        >
+          <span>{stageProgress}/{questionCount}</span>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+};
 
-}
+const AnswerButton = ({ answer, className, answertype, handleAnswer }) => {
+  const getShowableAnswer = () => {
+    if (answertype === 'romaji')
+      return findRomajisAtKanaKey(answer, kanaDictionary)[0];
+    else return answer;
+  };
 
-class AnswerButton extends Component {
-  getShowableAnswer() {
-    if(this.props.answertype === 'romaji')
-      return findRomajisAtKanaKey(this.props.answer, kanaDictionary)[0];
-    else return this.props.answer;
-  }
+  return (
+    <button className={className} onClick={() => handleAnswer(getShowableAnswer())}>{getShowableAnswer()}</button>
+  );
+};
 
-  render() {
-    return (
-      <button className={this.props.className} onClick={()=>this.props.handleAnswer(this.getShowableAnswer())}>{this.getShowableAnswer()}</button>
-    );
-  }
-}
 export default Question;

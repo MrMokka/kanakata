@@ -1,45 +1,53 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import Question from './Question';
 import DrawQuestion from './DrawQuestion';
 import WordTranslateQuestion from './WordTranslateQuestion';
 import Summary from './Summary';
 
-class Game extends Component {
-  state = {
-    showSummary: false,
-    results: []
-  }
+const Game = ({ decidedGroups, handleEndGame, stage, questionCount }) => {
+  const [showSummary, setShowSummary] = useState(false);
+  const [results, setResults] = useState([]);
 
-  handleStageComplete = (results) => {
-    this.setState({
-      showSummary: true,
-      results: results || []
-    });
-  }
+  const handleStageComplete = (newResults) => {
+    setShowSummary(true);
+    setResults(newResults || []);
+  };
 
-  render() {
-    if (this.state.showSummary) {
-      return (
-        <Summary
-          results={this.state.results}
-          onBackToMenu={this.props.handleEndGame}
-        />
-      );
-    }
-
+  if (showSummary) {
     return (
-      <div>
-        {
-          this.props.stage === 6 ?
-            <WordTranslateQuestion handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} questionCount={this.props.questionCount} />
-          : this.props.stage === 5 ?
-            <DrawQuestion handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} questionCount={this.props.questionCount} />
-          :
-            <Question handleStageComplete={this.handleStageComplete} stage={this.props.stage} decidedGroups={this.props.decidedGroups} questionCount={this.props.questionCount} />
-        }
-      </div>
+      <Summary
+        results={results}
+        onBackToMenu={handleEndGame}
+      />
     );
   }
-}
+
+  return (
+    <div>
+      {stage === 6 ? (
+        <WordTranslateQuestion
+          handleStageComplete={handleStageComplete}
+          stage={stage}
+          decidedGroups={decidedGroups}
+          questionCount={questionCount}
+        />
+      ) : stage === 5 ? (
+        <DrawQuestion
+          handleStageComplete={handleStageComplete}
+          stage={stage}
+          decidedGroups={decidedGroups}
+          questionCount={questionCount}
+        />
+      ) : (
+        <Question
+          handleStageComplete={handleStageComplete}
+          stage={stage}
+          decidedGroups={decidedGroups}
+          questionCount={questionCount}
+        />
+      )}
+    </div>
+  );
+};
 
 export default Game;

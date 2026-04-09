@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getWordDictionary } from '../../data/wordDictionary';
 import { shuffle } from '../../data/helperFuncs';
 import './Question.scss';
@@ -10,39 +10,39 @@ Stage 6: Word Translation Game
 - Progress bar similar to other stages
 */
 
-class WordTranslateQuestion extends Component {
-  state = {
-    previousQuestion: null,
-    previousAnswer: '',
-    previousCorrectAnswer: '',
-    wasCorrect: null,
-    currentQuestion: null,
-    currentAnswer: '',
-    stageProgress: 0,
-    mode: 'jp-to-en', // 'jp-to-en' or 'en-to-jp'
-    showKanji: false, // Toggle to show kanji instead of kana
-    results: [] // Track all answers for summary
-  }
+const WordTranslateQuestion = ({ stage, decidedGroups, questionCount, handleStageComplete }) => {
+  const [previousQuestion, setPreviousQuestion] = useState(null);
+  const [previousAnswer, setPreviousAnswer] = useState('');
+  const [previousCorrectAnswer, setPreviousCorrectAnswer] = useState('');
+  const [wasCorrect, setWasCorrect] = useState(null);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [currentAnswer, setCurrentAnswer] = useState('');
+  const [stageProgress, setStageProgress] = useState(0);
+  const [mode, setMode] = useState('jp-to-en');
+  const [showKanji, setShowKanji] = useState(false);
+  const [results, setResults] = useState([]);
 
-  componentWillMount() {
-    this.availableWords = getWordDictionary(); // Includes base + custom words
-    this.completedWords = []; // Track correctly answered words
-    this.previousQuestion = null;
-    this.stageProgress = 0;
-  }
+  const availableWordsRef = useRef([]);
+  const completedWordsRef = useRef([]);
+  const previousQuestionRef = useRef(null);
+  const stageProgressRef = useRef(0);
+  const resultsRef = useRef([]);
+  const currentQuestionRef = useRef(null);
 
-  componentDidMount() {
-    this.setNewQuestion();
-  }
+  useEffect(() => {
+    availableWordsRef.current = getWordDictionary();
+    completedWordsRef.current = [];
+    previousQuestionRef.current = null;
+    stageProgressRef.current = 0;
+    resultsRef.current = [];
+  }, []);
 
-  getRandomWords(amount, exclude) {
-    // Filter out completed words
-    let words = this.availableWords.filter(w => !this.completedWords.includes(w));
+  const getRandomWords = useCallback((amount, exclude) => {
+    let words = availableWordsRef.current.filter(w => !completedWordsRef.current.includes(w));
 
-    // If all words have been completed, reset the pool
     if (words.length === 0) {
-      this.completedWords = [];
-      words = this.availableWords.slice();
+      completedWordsRef.current = [];
+      words = availableWordsRef.current.slice();
     }
 
     if (exclude) {
@@ -50,47 +50,47 @@ class WordTranslateQuestion extends Component {
     }
     shuffle(words);
     return words.slice(0, amount);
-  }
+  }, []);
 
-  setNewQuestion() {
-    // Get a random word, excluding the previous one
-    const candidates = this.getRandomWords(1, this.previousQuestion);
+  const setNewQuestion = useCallback(() => {
+    const candidates = getRandomWords(1, previousQuestionRef.current);
     const question = candidates[0];
+    currentQuestionRef.current = question;
+    setCurrentQuestion(question);
+  }, [getRandomWords]);
 
-    this.currentQuestion = question;
-    this.setState({
-      currentQuestion: question
-    });
-  }
+  useEffect(() => {
+    if (availableWordsRef.current.length > 0 || true) {
+      // Initialize on mount
+      availableWordsRef.current = getWordDictionary();
+      setNewQuestion();
+    }
+  }, []);
 
-  handleAnswer = (answer) => {
+  const handleAnswer = useCallback((answer) => {
     const answerTrimmed = answer.trim().toLowerCase();
-    const word = this.currentQuestion;
+    const word = currentQuestionRef.current;
 
     let isCorrect = false;
     let allowedAnswers = [];
 
-    if (this.state.mode === 'jp-to-en') {
-      // Displaying Japanese -> accept English or romaji
+    if (mode === 'jp-to-en') {
       allowedAnswers = [word.english.toLowerCase(), word.romaji.toLowerCase()];
       isCorrect = allowedAnswers.includes(answerTrimmed);
     } else {
-      // Displaying English -> accept Japanese, romaji, or kanji (if available)
       allowedAnswers = [word.japanese, word.romaji.toLowerCase()];
       if (word.kanji) {
         allowedAnswers.push(word.kanji);
       }
       isCorrect = answerTrimmed === word.japanese ||
-                  answerTrimmed === word.romaji.toLowerCase() ||
-                  (word.kanji && answer.trim() === word.kanji);
+        answerTrimmed === word.romaji.toLowerCase() ||
+        (word.kanji && answer.trim() === word.kanji);
     }
 
-    this.previousQuestion = this.currentQuestion;
-    this.previousAllowedAnswers = allowedAnswers;
+    previousQuestionRef.current = currentQuestionRef.current;
 
-    // Build the correct answer display string
     let correctAnswerDisplay;
-    if (this.state.mode === 'jp-to-en') {
+    if (mode === 'jp-to-en') {
       correctAnswerDisplay = `${word.english} / ${word.romaji}`;
     } else {
       correctAnswerDisplay = word.kanji
@@ -98,8 +98,7 @@ class WordTranslateQuestion extends Component {
         : `${word.japanese} / ${word.romaji}`;
     }
 
-    // Build result entry for summary
-    const questionDisplay = this.state.mode === 'jp-to-en'
+    const questionDisplay = mode === 'jp-to-en'
       ? `${word.japanese} (${word.romaji})`
       : word.english;
 
@@ -110,76 +109,73 @@ class WordTranslateQuestion extends Component {
       correct: isCorrect
     };
 
-    const newResults = [...this.state.results, resultEntry];
+    const newResults = [...resultsRef.current, resultEntry];
+    resultsRef.current = newResults;
+    setResults(newResults);
 
-    this.setState({
-      previousQuestion: this.previousQuestion,
-      previousAnswer: answer,
-      previousCorrectAnswer: correctAnswerDisplay,
-      wasCorrect: isCorrect,
-      results: newResults
-    });
+    setPreviousQuestion(previousQuestionRef.current);
+    setPreviousAnswer(answer);
+    setPreviousCorrectAnswer(correctAnswerDisplay);
+    setWasCorrect(isCorrect);
 
     if (isCorrect) {
-      this.stageProgress = this.stageProgress + 1;
-      // Add to completed words so it won't be asked again
-      if (!this.completedWords.includes(this.currentQuestion)) {
-        this.completedWords.push(this.currentQuestion);
+      stageProgressRef.current = stageProgressRef.current + 1;
+      if (!completedWordsRef.current.includes(currentQuestionRef.current)) {
+        completedWordsRef.current.push(currentQuestionRef.current);
       }
     }
-    // Wrong answers don't reduce progress - user just needs X correct total
-    this.setState({ stageProgress: this.stageProgress });
+    setStageProgress(stageProgressRef.current);
 
-    if (this.stageProgress >= this.props.questionCount) {
-      this.props.handleStageComplete(newResults);
+    if (stageProgressRef.current >= questionCount) {
+      handleStageComplete(newResults);
     } else {
-      this.setNewQuestion();
+      setNewQuestion();
     }
-  }
+  }, [mode, questionCount, handleStageComplete, setNewQuestion]);
 
-  handleAnswerChange = (e) => {
-    this.setState({ currentAnswer: e.target.value });
-  }
+  const handleAnswerChange = (e) => {
+    setCurrentAnswer(e.target.value);
+  };
 
-  handleSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (this.state.currentAnswer !== '') {
-      this.handleAnswer(this.state.currentAnswer);
-      this.setState({ currentAnswer: '' });
+    if (currentAnswer !== '') {
+      handleAnswer(currentAnswer);
+      setCurrentAnswer('');
     }
-  }
+  };
 
-  toggleMode = () => {
-    this.setState(
-      prevState => ({ mode: prevState.mode === 'jp-to-en' ? 'en-to-jp' : 'jp-to-en', currentAnswer: '' }),
-      () => this.setNewQuestion()
-    );
-  }
+  const toggleMode = () => {
+    setMode(prevMode => {
+      const newMode = prevMode === 'jp-to-en' ? 'en-to-jp' : 'jp-to-en';
+      setCurrentAnswer('');
+      setTimeout(() => setNewQuestion(), 0);
+      return newMode;
+    });
+  };
 
-  toggleKanji = () => {
-    this.setState(prevState => ({ showKanji: !prevState.showKanji }));
-  }
+  const toggleKanji = () => {
+    setShowKanji(prev => !prev);
+  };
 
-  getShowableQuestion() {
-    if (!this.state.currentQuestion) return '';
-    if (this.state.mode === 'jp-to-en') {
-      // Show kanji if enabled and available, otherwise show kana
-      if (this.state.showKanji && this.state.currentQuestion.kanji) {
-        return this.state.currentQuestion.kanji;
+  const getShowableQuestion = () => {
+    if (!currentQuestion) return '';
+    if (mode === 'jp-to-en') {
+      if (showKanji && currentQuestion.kanji) {
+        return currentQuestion.kanji;
       }
-      return this.state.currentQuestion.japanese;
+      return currentQuestion.japanese;
     } else {
-      return this.state.currentQuestion.english;
+      return currentQuestion.english;
     }
-  }
+  };
 
-  getPreviousResult() {
-    if (!this.state.previousQuestion) {
+  const getPreviousResult = () => {
+    if (!previousQuestion) {
       return <div className="previous-result none">Translate the word!</div>;
     }
 
-    const { previousQuestion, previousCorrectAnswer, wasCorrect } = this.state;
-    const questionText = this.state.mode === 'jp-to-en'
+    const questionText = mode === 'jp-to-en'
       ? `${previousQuestion.japanese} (${previousQuestion.romaji})`
       : previousQuestion.english;
     const rightAnswer = `${questionText} = ${previousCorrectAnswer}`;
@@ -201,63 +197,57 @@ class WordTranslateQuestion extends Component {
         </div>
       );
     }
-  }
+  };
 
-  render() {
-    const stageProgressPercentage = Math.round((this.state.stageProgress / this.props.questionCount) * 100) + '%';
-    const stageProgressPercentageStyle = { width: stageProgressPercentage };
+  const stageProgressPercentage = Math.round((stageProgress / questionCount) * 100) + '%';
+  const stageProgressPercentageStyle = { width: stageProgressPercentage };
 
-    return (
-      <div className="text-center question col-xs-12">
-        {this.getPreviousResult()}
-        <div className="big-character" style={{ fontSize: this.state.mode === 'jp-to-en' ? '72px' : '32px' }}>
-          {this.getShowableQuestion()}
-        </div>
-        <div className="answer-form-container" style={{ maxWidth: this.state.mode === 'en-to-jp' ? '200px' : '150px' }}>
-          <form onSubmit={this.handleSubmit}>
-            <input
-              autoFocus
-              className="answer-input"
-              type="text"
-              value={this.state.currentAnswer}
-              onChange={this.handleAnswerChange}
-              style={{ width: this.state.mode === 'en-to-jp' ? '180px' : '140px' }}
-            />
-          </form>
-        </div>
-        <div style={{ marginTop: '12px' }}>
-          <button className="btn btn-xs btn-default" onClick={this.toggleMode}>
-            {this.state.mode === 'jp-to-en' ? 'Switch to: English → Japanese' : 'Switch to: Japanese → English'}
+  return (
+    <div className="text-center question col-xs-12">
+      {getPreviousResult()}
+      <div className="big-character" style={{ fontSize: mode === 'jp-to-en' ? '72px' : '32px' }}>
+        {getShowableQuestion()}
+      </div>
+      <div className="answer-form-container" style={{ maxWidth: mode === 'en-to-jp' ? '200px' : '150px' }}>
+        <form onSubmit={handleSubmit}>
+          <input
+            autoFocus
+            className="answer-input"
+            type="text"
+            value={currentAnswer}
+            onChange={handleAnswerChange}
+            style={{ width: mode === 'en-to-jp' ? '180px' : '140px' }}
+          />
+        </form>
+      </div>
+      <div style={{ marginTop: '12px' }}>
+        <button className="btn btn-xs btn-default" onClick={toggleMode}>
+          {mode === 'jp-to-en' ? 'Switch to: English → Japanese' : 'Switch to: Japanese → English'}
+        </button>
+        {mode === 'jp-to-en' && (
+          <button className="btn btn-xs btn-default" style={{ marginLeft: '8px' }} onClick={toggleKanji}>
+            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <span style={showKanji ? {} : { visibility: 'hidden', height: 0, overflow: 'hidden' }}>Show: Kana</span>
+              <span style={showKanji ? { visibility: 'hidden', height: 0, overflow: 'hidden' } : {}}>Show: Kanji</span>
+            </span>
           </button>
-          {this.state.mode === 'jp-to-en' && (
-            <button className="btn btn-xs btn-default" style={{ marginLeft: '8px' }} onClick={this.toggleKanji}>
-              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={this.state.showKanji ? {} : { visibility: 'hidden', height: 0, overflow: 'hidden' }}>Show: Kana</span>
-                <span style={this.state.showKanji ? { visibility: 'hidden', height: 0, overflow: 'hidden' } : {}}>Show: Kanji</span>
-              </span>
-            </button>
-          )}
-        </div>
-        <div className="progress" style={{ marginTop: '16px' }}>
-          <div
-            className="progress-bar progress-bar-info"
-            role="progressbar"
-            aria-valuenow={this.state.stageProgress}
-            aria-valuemin="0"
-            aria-valuemax={this.props.questionCount}
-            style={stageProgressPercentageStyle}
-          >
-            <span>{this.state.stageProgress}/{this.props.questionCount}</span>
-          </div>
+        )}
+      </div>
+      <div className="progress" style={{ marginTop: '16px' }}>
+        <div
+          className="progress-bar progress-bar-info"
+          role="progressbar"
+          aria-valuenow={stageProgress}
+          aria-valuemin="0"
+          aria-valuemax={questionCount}
+          style={stageProgressPercentageStyle}
+        >
+          <span>{stageProgress}/{questionCount}</span>
         </div>
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
 
 export default WordTranslateQuestion;
-
-
-
-
 

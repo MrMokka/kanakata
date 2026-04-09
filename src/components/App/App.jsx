@@ -1,56 +1,52 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.scss';
 import Navbar from '../Navbar/Navbar';
 import GameContainer from '../GameContainer/GameContainer';
-import { removeHash } from '../../data/helperFuncs';
 
-const options = {};
+const App = () => {
+  const [gameState, setGameState] = useState('chooseCharacters');
 
-class App extends Component {
-  state = { gameState: 'chooseCharacters' };
+  const startGame = () => {
+    setGameState('game');
+  };
 
-  startGame = () => {
-    this.setState({gameState: 'game'});
-  }
+  const endGame = () => {
+    setGameState('chooseCharacters');
+  };
 
-  endGame = () => {
-    this.setState({gameState: 'chooseCharacters'});
-  }
-
-  componentWillUpdate(nextProps, nextState) {
-    // This is primarily for demo site purposes. Hides #footer when game is on.
-    if(document.getElementById('footer')) {
-      if(nextState.gameState=='chooseCharacters')
+  // Handle footer visibility on game state change
+  useEffect(() => {
+    if (document.getElementById('footer')) {
+      if (gameState === 'chooseCharacters')
         document.getElementById('footer').style.display = "block";
       else
         document.getElementById('footer').style.display = "none";
     }
-  }
+  }, [gameState]);
 
-  componentWillMount() {
-    if(document.getElementById('footer'))
+  // Initial footer visibility
+  useEffect(() => {
+    if (document.getElementById('footer'))
       document.getElementById('footer').style.display = "block";
-  }
+  }, []);
 
-  render() {
-    return (
-      <div>
-        <Navbar
-          gameState={this.state.gameState}
-          handleEndGame={this.endGame}
-        />
-        <div className="outercontainer">
-          <div className="container game">
-            <GameContainer
-              gameState={this.state.gameState}
-              handleStartGame={this.startGame}
-              handleEndGame={this.endGame}
-            />
-          </div>
+  return (
+    <div>
+      <Navbar
+        gameState={gameState}
+        handleEndGame={endGame}
+      />
+      <div className="outercontainer">
+        <div className="container game">
+          <GameContainer
+            gameState={gameState}
+            handleStartGame={startGame}
+            handleEndGame={endGame}
+          />
         </div>
       </div>
-    )
-  }
-}
+    </div>
+  );
+};
 
 export default App;
