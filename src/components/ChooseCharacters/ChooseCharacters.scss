@@ -156,6 +156,50 @@
   color: #d9534f;
   padding-bottom: 10px;
 }
+
+.game-mode-container {
+  margin-bottom: 20px;
+}
+
+.game-mode-section {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  gap: 8px 20px;
+  align-items: center;
+}
+
+.game-mode-label {
+  margin: 0;
+  color: #666;
+  justify-self: start;
+}
+
+.game-mode-buttons {
+  grid-row: span 2;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 8px;
+}
+
+.question-count-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+
+  label {
+    margin: 0;
+    font-weight: normal;
+    color: #666;
+  }
+
+  input {
+    width: 70px;
+    text-align: center;
+  }
+}
+
 .stage-buttons {
   display: flex;
   flex-wrap: wrap;

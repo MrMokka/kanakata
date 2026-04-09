@@ -382,14 +382,14 @@ const ChooseCharacters = ({ selectedGroups: initialSelectedGroups, handleStartGa
         </div>
       </div>
       <div className="row">
-        <div className="col-xs-12 text-center" style={{ marginBottom: '20px' }}>
+        <div className="col-xs-12 text-center game-mode-container">
           {
             errMsg !== '' &&
             <div className="error-message">{errMsg}</div>
           }
-          <div ref={startRef} style={{ display: 'inline-grid', gridTemplateColumns: 'auto auto', gridTemplateRows: 'auto auto', gap: '8px 20px', alignItems: 'center' }}>
-            <p style={{ margin: 0, color: '#666', justifySelf: 'start' }}>Choose a game mode:</p>
-            <div style={{ gridRow: 'span 2', display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: '8px' }}>
+          <div ref={startRef} className="game-mode-section">
+            <p className="game-mode-label">Choose a game mode:</p>
+            <div className="game-mode-buttons">
               {stageDescriptions.map(({ stage, title, description }) => (
                 <button
                   key={stage}
@@ -401,15 +401,14 @@ const ChooseCharacters = ({ selectedGroups: initialSelectedGroups, handleStartGa
                 </button>
               ))}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifySelf: 'start' }}>
-              <label style={{ margin: 0, fontWeight: 'normal', color: '#666' }}>Questions:</label>
+            <div className="question-count-wrapper">
+              <label>Questions:</label>
               <input
                 type="number"
                 min="1"
                 className="form-control"
                 value={questionCount}
                 onChange={(e) => setQuestionCount(e.target.value)}
-                style={{ width: '70px', textAlign: 'center' }}
               />
             </div>
           </div>
