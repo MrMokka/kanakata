@@ -79,6 +79,13 @@ const DrawQuestion = ({ stage, decidedGroups, questionCount, handleStageComplete
     return randomizedKanas;
   }, []);
 
+  const getPoint = useCallback((e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }, []);
+
   // Draw faint preview onto visible canvas if hint enabled
   const drawHintOverlay = useCallback((showHintFlag) => {
     const ctx = ctxRef.current;
@@ -151,6 +158,26 @@ const DrawQuestion = ({ stage, decidedGroups, questionCount, handleStageComplete
     drawInkToVisible();
   }, [clearVisibleCanvas, drawHintOverlay, drawInkToVisible]);
 
+  const renderTargetToHidden = useCallback(() => {
+    const hctx = hctxRef.current;
+    const hidden = hiddenRef.current;
+    if (!hctx || !hidden) return;
+
+    hctx.clearRect(0, 0, hidden.width, hidden.height);
+    hctx.fillStyle = '#000';
+    hctx.strokeStyle = '#000';
+    hctx.textAlign = 'center';
+    hctx.textBaseline = 'middle';
+    const fontSize = Math.floor(hidden.height * 0.7);
+    hctx.font = `${fontSize}px "Hiragino Kaku Gothic Pro", "Meiryo", "MS PGothic", system-ui`;
+    const kana = (currentQuestionRef.current && currentQuestionRef.current[0]) || '';
+    hctx.lineWidth = Math.max(4, Math.floor(fontSize * 0.03));
+    hctx.strokeText(kana, hidden.width / 2, hidden.height / 2);
+    hctx.globalAlpha = 0.15;
+    hctx.fillText(kana, hidden.width / 2, hidden.height / 2);
+    hctx.globalAlpha = 1.0;
+  }, []);
+
   const setNewQuestion = useCallback(() => {
     const newQuestion = getRandomKanas(1, false, previousQuestionRef.current);
     currentQuestionRef.current = newQuestion;
@@ -160,13 +187,6 @@ const DrawQuestion = ({ stage, decidedGroups, questionCount, handleStageComplete
     renderTargetToHidden();
     recomposeVisible(false);
   }, [getRandomKanas, clearCanvas, renderTargetToHidden, recomposeVisible]);
-
-  const getPoint = useCallback((e) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  }, []);
 
   const initCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -194,71 +214,12 @@ const DrawQuestion = ({ stage, decidedGroups, questionCount, handleStageComplete
     recomposeVisible(false);
   }, [clearVisibleCanvas, recomposeVisible]);
 
+  // Initialize on mount
   useEffect(() => {
     initializeCharacters();
     initCanvas();
     setNewQuestion();
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const start = (e) => {
-      if (resultShown) return;
-      isDrawingRef.current = true;
-      lastPtRef.current = getPoint(e);
-    };
-
-    const move = (e) => {
-      if (!isDrawingRef.current || resultShown) return;
-      const p = getPoint(e);
-      const ctx = ctxRef.current;
-      const ictx = ictxRef.current;
-
-      if (ctx) {
-        ctx.save();
-        ctx.globalAlpha = 1.0;
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 10;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(lastPtRef.current.x, lastPtRef.current.y);
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      if (ictx) {
-        ictx.strokeStyle = '#000';
-        ictx.lineWidth = 10;
-        ictx.lineCap = 'round';
-        ictx.beginPath();
-        ictx.moveTo(lastPtRef.current.x, lastPtRef.current.y);
-        ictx.lineTo(p.x, p.y);
-        ictx.stroke();
-      }
-
-      lastPtRef.current = p;
-    };
-
-    const end = () => {
-      if (resultShown) return;
-      isDrawingRef.current = false;
-    };
-
-    canvas.onpointerdown = start;
-    canvas.onpointermove = move;
-    canvas.onpointerup = end;
-    canvas.onpointerleave = end;
-
-    return () => {
-      if (canvas) {
-        canvas.onpointerdown = null;
-        canvas.onpointermove = null;
-        canvas.onpointerup = null;
-        canvas.onpointerleave = null;
-      }
-    };
-  }, [initializeCharacters, initCanvas, setNewQuestion, getPoint, resultShown]);
+  }, []); // Empty deps - only run once on mount
 
   // Re-attach event listeners when resultShown changes
   useEffect(() => {
@@ -312,27 +273,15 @@ const DrawQuestion = ({ stage, decidedGroups, questionCount, handleStageComplete
     canvas.onpointermove = move;
     canvas.onpointerup = end;
     canvas.onpointerleave = end;
+
+    return () => {
+      canvas.onpointerdown = null;
+      canvas.onpointermove = null;
+      canvas.onpointerup = null;
+      canvas.onpointerleave = null;
+    };
   }, [resultShown, getPoint]);
 
-  const renderTargetToHidden = useCallback(() => {
-    const hctx = hctxRef.current;
-    const hidden = hiddenRef.current;
-    if (!hctx || !hidden) return;
-
-    hctx.clearRect(0, 0, hidden.width, hidden.height);
-    hctx.fillStyle = '#000';
-    hctx.strokeStyle = '#000';
-    hctx.textAlign = 'center';
-    hctx.textBaseline = 'middle';
-    const fontSize = Math.floor(hidden.height * 0.7);
-    hctx.font = `${fontSize}px "Hiragino Kaku Gothic Pro", "Meiryo", "MS PGothic", system-ui`;
-    const kana = (currentQuestionRef.current && currentQuestionRef.current[0]) || '';
-    hctx.lineWidth = Math.max(4, Math.floor(fontSize * 0.03));
-    hctx.strokeText(kana, hidden.width / 2, hidden.height / 2);
-    hctx.globalAlpha = 0.15;
-    hctx.fillText(kana, hidden.width / 2, hidden.height / 2);
-    hctx.globalAlpha = 1.0;
-  }, []);
 
   // Compute bounding box of non-transparent pixels
   const getBBox = (imgData, width, height, alphaThresh = 10) => {
