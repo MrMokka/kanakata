@@ -91,7 +91,9 @@ const WordTranslateQuestion = ({ stage, decidedGroups, questionCount, handleStag
 
     let correctAnswerDisplay;
     if (mode === 'jp-to-en') {
-      correctAnswerDisplay = word.english;
+      correctAnswerDisplay = word.kanji
+        ? `${word.english} (${word.kanji})`
+        : word.english;
     } else {
       correctAnswerDisplay = word.kanji
         ? `${word.japanese} / ${word.kanji}`
