@@ -388,29 +388,33 @@ const ChooseCharacters = ({ selectedGroups: initialSelectedGroups, handleStartGa
             <div className="error-message">{errMsg}</div>
           }
           <div ref={startRef}>
-            <p style={{ marginBottom: '10px', color: '#666' }}>Choose a game mode:</p>
-            <div style={{ marginBottom: '10px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-              <label style={{ margin: 0, fontWeight: 'normal', color: '#666' }}>Questions:</label>
-              <input
-                type="number"
-                min="1"
-                className="form-control"
-                value={questionCount}
-                onChange={(e) => setQuestionCount(e.target.value)}
-                style={{ width: '70px', display: 'inline-block', textAlign: 'center' }}
-              />
-            </div>
-            <div className="stage-buttons">
-              {stageDescriptions.map(({ stage, title, description }) => (
-                <button
-                  key={stage}
-                  className="btn btn-danger stage-start-button"
-                  onClick={() => startGame(stage)}
-                  title={description}
-                >
-                  {title}
-                </button>
-              ))}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start', gap: '20px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
+                <p style={{ margin: 0, color: '#666' }}>Choose a game mode:</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ margin: 0, fontWeight: 'normal', color: '#666' }}>Questions:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="form-control"
+                    value={questionCount}
+                    onChange={(e) => setQuestionCount(e.target.value)}
+                    style={{ width: '70px', display: 'inline-block', textAlign: 'center' }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: '8px' }}>
+                {stageDescriptions.map(({ stage, title, description }) => (
+                  <button
+                    key={stage}
+                    className="btn btn-danger stage-start-button"
+                    onClick={() => startGame(stage)}
+                    title={description}
+                  >
+                    {title}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
