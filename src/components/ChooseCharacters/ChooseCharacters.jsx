@@ -375,7 +375,7 @@ const ChooseCharacters = ({ selectedGroups: initialSelectedGroups, handleStartGa
         <div className="col-xs-12">
           <div className="panel panel-default">
             <div className="panel-body welcome">
-              <h4>Welcome to Kana Pro!</h4>
+              <h4>Welcome to Kana Kata!</h4>
               <p>Please choose the characters you'd like to study. Click a row to select the whole group, or click ▼ to pick individual characters.</p>
             </div>
           </div>
