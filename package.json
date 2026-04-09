@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Application for practicing Japanese - hiragana, katakana, kanji, and words.",
   "main": "index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "webpack serve --open --mode development --host localhost --port 8050",
