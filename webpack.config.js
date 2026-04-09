@@ -1,9 +1,15 @@
 const HtmlWebPackPlugin = require('html-webpack-plugin');
+const path = require('path');
 
 module.exports = {
   mode: 'development',
   resolve: {
     extensions: ['.js', '.jsx']
+  },
+  devServer: {
+    hot: true,
+    port: 8050,
+    open: true
   },
   plugins: [
     new HtmlWebPackPlugin({
@@ -22,17 +28,20 @@ module.exports = {
       {
         test: /\.scss$/,
         use: [
-          {
-            loader: 'style-loader'
-          },
+          'style-loader',
           {
             loader: 'css-loader',
             options: {
               importLoaders: 1
             }
           },
+          'postcss-loader',
           {
-            loader: 'postcss-loader'
+            loader: 'sass-loader',
+            options: {
+              api: 'modern-compiler',
+              implementation: require('sass')
+            }
           }
         ]
       },
@@ -41,12 +50,8 @@ module.exports = {
         use: ['style-loader', 'css-loader']
       },
       {
-        test: /\.(png|jpg|svg|woff|woff2)?(\?v=\d+.\d+.\d+)?$/,
-        loader: 'url-loader?limit=25000'
-      }, 
-      {
-        test: /\.(eot|ttf)$/,
-        loader: 'file-loader'
+        test: /\.(png|jpg|svg|woff|woff2|eot|ttf)$/,
+        type: 'asset/resource'
       }
     ]
   }

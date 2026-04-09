@@ -1,6 +1,6 @@
 import { Workbox } from 'workbox-window';
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import Bootstrap from './assets/stylesheets/bootstrap.min.css';
 import App from './components/App/App';
 
@@ -31,4 +31,5 @@ let appEl = document.getElementById('app');
 if (!appEl) // in case of old index.html in cache
   appEl = document.querySelector('.app');
 
-ReactDOM.render(<App />, appEl);
+const root = createRoot(appEl);
+root.render(<App />);
